@@ -1,4 +1,3 @@
-/// <reference types="mongoose" />
 import { Model } from "mongoose";
 import { IUserModel } from "./user";
 import { IDeviceModel } from "./device";

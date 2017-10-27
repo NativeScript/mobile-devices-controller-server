@@ -9,7 +9,7 @@ import { Platform, DeviceType } from "mobile-devices-controller";
 /**
  * / route
  *
- * @class User
+ * @class Device
  */
 export class DevicesRoute extends BaseRoute {
 
@@ -32,28 +32,56 @@ export class DevicesRoute extends BaseRoute {
       res.send("no query string");
     });
 
-    const bootIOSDeviceFilter = function (req, res, next) {
-      req.query.platform = Platform.IOS;
-      const count = req.query.count || process.env.MAX_IOS_DEVICES_COUNT || 999;
-      DeviceManager.boot(model, req.query, count).then((value) => {
-        res.json("IOS emualtors are booted! " + value);
+    const bootDeviceFilter = function (req, res, next) {
+      const platform = req.params[0].replace("/").trim().toLowerCase();
+      let maxDeviceCountToBoot = 1;
+      switch (platform) {
+        case "android":
+          req.query.platform = Platform.ANDROID;
+          maxDeviceCountToBoot = req.query.count || process.env.MAX_ANDROID_DEVICES_COUNT || 9999;
+          break;
+        case "ios":
+          req.query.platform = Platform.IOS;
+          maxDeviceCountToBoot = req.query.count || process.env.MAX_IOS_DEVICES_COUNT || 999;
+          break;
+        default:
+          break;
+      }
+
+      DeviceManager.boot(model, req.query, maxDeviceCountToBoot).then((devices) => {
+        res.json("Devices are booted!" + devices);
       })
     };
 
-    router.get("/devices/boot/ios", bootIOSDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
-      res.json("IOS simulatorors are dead!");
+    router.get("/devices/boot/*", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Device failed to boot!");
     });
 
-    const bootAndroidDeviceFilter = function (req, res, next) {
-      req.query.platform = Platform.ANDROID;
-      const count = req.query.count || process.env.MAX_ANDROID_DEVICES_COUNT || 9999;
-      DeviceManager.boot(model, req.query, req.query.count).then(() => {
-        res.json("Android emualtors are booted!");
-      })
+    const subscribeDeviceFilter = function (req, res, next) {
+      const query = req.query;
+      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel) {
+        res.json("Data failed to update!");
+      }
+      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, model).then((device) => {
+        res.json(device);
+      });
     };
 
-    router.get("/devices/boot/android", bootAndroidDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
-      res.json("Android emulators failed to boot!");
+    // devices/subscribe?platform=android&deviceType=simulator&app=UITests
+    router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Device failed to boot!");
+    });
+
+    const update = function (req, res, next) {
+      const searchedString = req.params[0].split("/")[0];
+      DeviceManager.update(model, searchedString, req.query).then((devices) => {
+        res.json("Data is updated");
+      })
+    };
+    //              /searchedDeviceToUpdate    ?update properties
+    //devices/update/name=iPhone,type=simulator?name=test
+    router.get("/devices/update/*", update, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Data failed to update!");
     });
 
     const refreshFilter = function (req, res, next) {
@@ -66,36 +94,30 @@ export class DevicesRoute extends BaseRoute {
       res.json("Data failed to refresh!");
     });
 
-
-    const update = function (req, res, next) {
-      DeviceManager.update(model, req.params[0], req.query).then((devices) => {
-        res.json("Data is updated");
-      })
-    };
-
-    router.get("/devices/update/*", update, (req: Request, res: Response, next: NextFunction) => {
-      res.json("Data failed to refresh!");
-    });
-
-    router.get("/devices/killall", (req: Request, res: Response, next: NextFunction) => {
-      DeviceManager.killAll(model);
-      res.json("All simulators and emulators are dead!")
-    });
-
-    router.get("/devices/killall/ios", (req: Request, res: Response, next: NextFunction) => {
-      DeviceManager.killAll(model, "sim");
-      res.json("IOS simulatorors are dead!");
-    });
-
-    router.get("/devices/killall/android", (req: Request, res: Response, next: NextFunction) => {
-      DeviceManager.killAll(model, "android");
-      res.json("Android emulators are dead!");
-    });
-
-    router.get("/devices/kill", async (req: Request, res: Response, next: NextFunction) => {
-      let query = req.query;
-      await DeviceManager.killDevice(req.query, model);
-      res.send("no query string");
+    // devices/kill/all
+    // devices/kill/ios
+    // devices/kill/android
+    // devices/kill?name=Emulator-Api21-Default
+    router.get("/devices/kill*", (req: Request, res: Response, next: NextFunction) => {
+      const params = req.params;
+      const query = req.query;
+      if (!query.hasOwnProperty() && params[0] !== "") {
+        const command = params[0].replace("/", "").trim().toLowerCase();
+        switch (command) {
+          case "ios":
+          case "android":
+          case "all":
+            DeviceManager.killAll(model, command);
+            res.json(`${params} are dead!`);
+            break;
+          default:
+            break;
+        }
+      } else {
+        DeviceManager.killDevice(query, model).then(() => {
+          res.send("no query string");
+        })
+      }
     });
   }
 

@@ -1,11 +1,10 @@
-/// <reference types="express" />
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { IModel } from "../models/model";
 /**
  * / route
  *
- * @class User
+ * @class Device
  */
 export declare class DevicesRoute extends BaseRoute {
     /**

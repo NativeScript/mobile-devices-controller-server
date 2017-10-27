@@ -26,7 +26,7 @@ export class DeviceManager {
         };
         await DeviceManager.boot(model, query, simsCount);
 
-        query.type = Platform.ANDROID;
+        query.type = DeviceType.EMULATOR;
         await DeviceManager.boot(model, query, emusCount);
     }
 
@@ -34,17 +34,41 @@ export class DeviceManager {
         query.status = Status.SHUTDOWN;
         let simulators = await DeviceManager.findDevices(model, query);
 
-        const maxSimToBoot = Math.min(simulators.length, parseInt(count || 1));
-        for (var index = 0; index < maxSimToBoot; index++) {
+        const maxDevicesToBoot = Math.min(simulators.length, parseInt(count || 1));
+        const startedDevices = new Array();
+        for (var index = 0; index < maxDevicesToBoot; index++) {
             const sim = simulators[index];
             let device = DeviceManager.copyIDeviceModelToDevice(sim);
-            const type = device.type.toLowerCase();
-            if (type.includes("sim")) {
-                await IOSManager.startSimulator(device);
-            } else if(type.includes("emu")) {
-                await AndroidManager.startEmulator(device);
+            if (device.type === DeviceType.SIMULATOR) {
+                device = await IOSManager.startSimulator(device);
+            } else if (device.type === DeviceType.EMULATOR) {
+                device = await AndroidManager.startEmulator(device);
             }
-            await model.device.update(sim, device.toJson());
+            const json = (<Device>device).toJson();
+            const result = model.device.update(sim, json);
+            startedDevices.push(device);
+        }
+
+        return startedDevices;
+    }
+
+    public static async subscribeDevice(platform, deviceType, app, apiLevel, model) {
+        const status = Status.SHUTDOWN;
+        const devices = await DeviceManager.findDevices(model, {
+            "platform": platform,
+            "type": deviceType,
+            "status": status,
+            "apiLevel": apiLevel,
+        });
+
+        if (devices && devices.length > 0) {
+            let device = devices[0];
+            (await model.device.update(device, {
+                "status": Status.BUSY,
+                "busySince": Date.now(),
+                "info": app
+            }));
+            return device;
         }
     }
 
@@ -94,20 +118,20 @@ export class DeviceManager {
 
     public static async killDeviceSingle(device: IDeviceModel, model) {
         const sim = DeviceManager.copyIDeviceModelToDevice(device);
-        if (device.type.toLowerCase().includes("sim") || device.type.toLowerCase().includes("ios")) {
+        if (device.type === DeviceType.SIMULATOR || device.platform === Platform.IOS) {
             IOSManager.kill(sim.token.toString());
         } else {
             AndroidManager.kill(sim);
         }
 
-        sim.status = "shutdown";
+        sim.status = Status.SHUTDOWN;
         sim.startedAt = -1;
         sim.token = "";
-        const tempQuery: any = sim.toJson();
+        const tempQuery: any = (<Device>sim).toJson();
         tempQuery.startedUsageAt = -1;
         tempQuery.holder = -1;
 
-        const log = await model.device.update(device, sim.toJson());
+        const log = await model.device.update(device, (<Device>sim).toJson());
         console.log(log);
     }
 
@@ -163,7 +187,7 @@ export class DeviceManager {
         return simulators;
     }
 
-    private static copyIDeviceModelToDevice(deviceModel: IDeviceModel, device?: Device) {
+    private static copyIDeviceModelToDevice(deviceModel: IDeviceModel, device?: Device): IDevice {
         if (!device) {
             device = new Device(
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.name),
@@ -172,10 +196,10 @@ export class DeviceManager {
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.platform),
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.token),
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.status),
-                deviceModel.procPid)
+                deviceModel.pid)
         } else {
             device.name = DeviceManager.stringObjToPrimitiveConverter(deviceModel.name);
-            device.procPid = deviceModel.procPid;
+            device.pid = deviceModel.pid;
             device.startedAt = deviceModel.startedAt;
             device.status = DeviceManager.stringObjToPrimitiveConverter(deviceModel.status);
             device.token = DeviceManager.stringObjToPrimitiveConverter(deviceModel.token);
@@ -189,7 +213,7 @@ export class DeviceManager {
 
     private static copyDeviceToIDeviceModel(device: Device, deviceModel: IDeviceModel) {
         deviceModel.name = device.name;
-        deviceModel.procPid = device.procPid;
+        deviceModel.pid = device.pid;
         deviceModel.startedAt = device.startedAt;
         deviceModel.status = device.status.toString();
         deviceModel.token = device.token.toString();
@@ -205,8 +229,8 @@ export class DeviceManager {
         return value;
     }
 
-    private static loadDBWithAndroidDevices(model: IModel) {
-        DeviceManager.getAndroidDevices().forEach(async (devices) => {
+    private static async loadDBWithAndroidDevices(model: IModel) {
+        (await DeviceManager.getAndroidDevices()).forEach(async (devices) => {
             devices.forEach(async (device) => {
                 await DeviceManager.createModel(model, device);
             });

@@ -5,9 +5,9 @@ export interface IDevice {
     platform: string;
     status?: string;
     info?: string;
-    config?: string;
+    config?: any;
     apiLevel?: string;
     startedAt?: number;
     busySince?: number;
-    procPid?: number;
+    pid?: number;
 }

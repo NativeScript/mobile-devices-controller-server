@@ -1,4 +1,3 @@
-/// <reference types="express" />
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { IModel } from "../models/model";

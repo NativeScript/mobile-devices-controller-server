@@ -7,10 +7,10 @@ export var deviceSchema: Schema = new Schema({
   platform: String,
   status: String,
   info: String,
-  config: String,
+  config: {},
   startedAt: Number,
   busySince: Number,
-  procPid: Number,
+  pid: Number,
   apiLevel: String
 });
 
