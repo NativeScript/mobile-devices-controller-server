@@ -6,7 +6,7 @@ export declare class DeviceManager {
     static bootDevices(repository: IUnitOfWork): Promise<void>;
     static boot(repository: IUnitOfWork, query: any, count: any): Promise<d.IDevice[]>;
     static subscribeDevice(platform: any, deviceType: any, app: any, apiLevel: any, deviceName: any, repository: IUnitOfWork): Promise<any>;
-    static update(repository: IUnitOfWork, searchQuery: any, udpateQuery: any): Promise<any>;
+    static update(repository: IUnitOfWork, searchQuery: any, udpateQuery: any): Promise<any[]>;
     static getIOSDevices(): Map<string, IDevice[]>;
     static getAndroidDevices(): Promise<Map<string, IDevice[]>>;
     static killDevice(obj: any, repository: IUnitOfWork): Promise<void>;

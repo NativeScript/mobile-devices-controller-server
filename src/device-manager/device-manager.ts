@@ -89,32 +89,26 @@ export class DeviceManager {
     }
 
     public static async update(repository: IUnitOfWork, searchQuery, udpateQuery) {
-        const searchedObj: any = {};
-        searchQuery.split(",").forEach(element => {
+        const searchedObj = {};
+        searchQuery.split("&").forEach(element => {
             let delimiter = "="
             if (element.includes(":")) {
                 delimiter = ":";
             }
 
             const args = element.split(delimiter);
-            for (let index = 0; index < args.length - 1; index++) {
-                searchedObj[args[index]] = args[index + 1];
-            }
+            searchedObj[args[0]] = args[1];
         });
 
-        let simulators;
-        if (searchedObj.hasOwnProperty("id")) {
-            simulators = await repository.devices.find(searchedObj["id"]);
-        } else {
-            simulators = await repository.devices.find(searchedObj);
-        }
-
+        const simulators = await repository.devices.find(searchedObj);
+        const updatedSimulators = new Array();
         for (var index = 0; index < simulators.length; index++) {
             const sim = simulators[index];
-            await repository.devices.update(sim, udpateQuery);
+            await repository.devices.update(sim.token, udpateQuery)
+            updatedSimulators.push(await repository.devices.find({ "token": sim.token }));
         }
 
-        return simulators;
+        return updatedSimulators;
     }
 
     public static getIOSDevices() {

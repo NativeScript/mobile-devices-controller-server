@@ -63,9 +63,9 @@ export class DevicesRoute extends BaseRoute {
         res.json(devices);
       })
     };
-    //              /searchedDeviceToUpdate    ?update properties
-    //devices/update/name=iPhone,type=simulator?name=test
-    router.get("/devices/update/*", update, (req: Request, res: Response, next: NextFunction) => {
+    
+    //http://localhost:3000/devices/update/type=simulator&status=shutdown&name=iPhone%206?name=KOr
+    router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
       res.json("Data failed to update!");
     });
 
