@@ -5,26 +5,14 @@ import * as logger from "morgan";
 import * as path from "path";
 import errorHandler = require("errorhandler");
 import methodOverride = require("method-override");
-import mongoose = require("mongoose"); //import mongoose
 
 //routes
 import { IndexRoute } from "./routes/index";
 import { UsersRoute } from "./routes/users-route";
 import { DevicesRoute } from "./routes/devices-route";
-
-//interfaces
-import { IUser } from "./interfaces/user"; //import IUser
-import { IDevice } from "./interfaces/device"; //import IUser
-
-//models
-import { IModel } from "./models/model"; //import IModel
-
-import { IUserModel } from "./models/user"; //import IUserModel
-import { IDeviceModel } from "./models/device"; //import IUserModel
-
-//schemas
-import { userSchema } from "./schemas/user"; //import userSchema
-import { deviceSchema } from "./schemas/device"; //import userSchema
+import { IUnitOfWork } from "../db/interfaces/unit-of-work";
+import { LocalRepositoryUnitOfWork } from "../db/local/local-unit-of-work";
+import { MongoUnitOfWork } from "../db/mongo/mongodb-unit-of-work";
 
 /**
  * The server.
@@ -33,9 +21,9 @@ import { deviceSchema } from "./schemas/device"; //import userSchema
  */
 export class Server {
 
-  public app: express.Application;
+  private _unitOfWork: IUnitOfWork;
 
-  private model: IModel; //an instance of IModel
+  public app: express.Application;
 
   /**
    * Bootstrap the application.
@@ -56,8 +44,12 @@ export class Server {
    * @constructor
    */
   constructor() {
-    //instance defaults
-    this.model = Object(); //initialize this to an empty object
+
+    if (process.env.LOCAL_DB) {
+      this._unitOfWork = new LocalRepositoryUnitOfWork();
+    } else {
+      this._unitOfWork = new MongoUnitOfWork();
+    }
 
     //create expressjs application
     this.app = express();
@@ -89,11 +81,10 @@ export class Server {
    * @method config
    */
   public async config() {
-    const MONGODB_CONNECTION: string = "mongodb://localhost:27017/devices";
 
     //add static paths
     //this.app.use(express.static('public')).listen(3000, "0.0.0.0");
-    
+
     //configure pug
     this.app.use(express.static(path.join(__dirname, "public")));
 
@@ -117,18 +108,6 @@ export class Server {
     //mount override
     this.app.use(methodOverride());
 
-    //use q promises
-    global.Promise = require("q").Promise;
-    mongoose.Promise = global.Promise;
-
-    //connect to mongoose
-    let connection: mongoose.Connection = mongoose.createConnection(MONGODB_CONNECTION);
-    //connection.dropDatabase();
-    //create models
-    this.model.user = connection.model<IUserModel>("User", userSchema);
-    this.model.device = connection.model<IDeviceModel>("Device", deviceSchema);
-    await this.model.device.db.dropDatabase();
-    // catch 404 and forward to error handler
     this.app.use(function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
       err.status = 404;
       next(err);
@@ -137,7 +116,7 @@ export class Server {
     //error handling
     this.app.use(errorHandler());
 
-    await DevicesRoute.refreshData(this.model);
+    await DevicesRoute.refreshData(this._unitOfWork);
   }
 
   /**
@@ -153,8 +132,8 @@ export class Server {
 
     //IndexRoute
     IndexRoute.create(router);
-    UsersRoute.create(router, this.model);
-    DevicesRoute.create(router, this.model);
+    //UsersRoute.create(router, this._unitOfWork);
+    DevicesRoute.create(router, this._unitOfWork);
 
     //use router middleware
     this.app.use(router);

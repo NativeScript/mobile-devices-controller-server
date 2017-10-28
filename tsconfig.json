@@ -22,11 +22,16 @@
         "paths": {
             "*": [
                 "./node_modules/*"
+            ],
+            "db":[
+                "./db/*"
             ]
         }
     },
     "include": [
-        "src"
+        "src",
+        "models",
+        "repository"
     ],
     "exclude": [
         "node_modules"

@@ -5,8 +5,8 @@ import * as express from "express";
  * @class Server
  */
 export declare class Server {
+    private _unitOfWork;
     app: express.Application;
-    private model;
     /**
      * Bootstrap the application.
      *

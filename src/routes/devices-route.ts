@@ -1,10 +1,8 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IModel } from "../models/model";
-import { IDeviceModel } from "../models/device";
-import { DocumentQuery } from "mongoose";
 import { DeviceManager } from "../device-manager/device-manager";
 import { Platform, DeviceType } from "mobile-devices-controller";
+import { IUnitOfWork } from "../../db/interfaces/unit-of-work";
 
 /**
  * / route
@@ -20,10 +18,10 @@ export class DevicesRoute extends BaseRoute {
    * @method create
    * @static
    */
-  public static create(router: Router, model: IModel) {
+  public static create(router: Router, repository: IUnitOfWork) {
 
     const getDevicesFilter = function (req, res, next) {
-      model.device.find(req.query, (err, devices) => {
+      repository.devices.find(req.query).then((devices) => {
         res.json(devices);
       });
     };
@@ -48,7 +46,7 @@ export class DevicesRoute extends BaseRoute {
           break;
       }
 
-      DeviceManager.boot(model, req.query, maxDeviceCountToBoot).then((devices) => {
+      DeviceManager.boot(repository, req.query, maxDeviceCountToBoot).then((devices) => {
         res.json("Devices are booted!" + devices);
       })
     };
@@ -59,22 +57,22 @@ export class DevicesRoute extends BaseRoute {
 
     const subscribeDeviceFilter = function (req, res, next) {
       const query = req.query;
-      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel) {
+      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel || !query.deviceName) {
         res.json("Data failed to update!");
       }
-      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, model).then((device) => {
+      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.deviceName, repository).then((device) => {
         res.json(device);
       });
     };
 
-    // devices/subscribe?platform=android&deviceType=simulator&app=UITests
+    // http://localhost:3000/devices/subscribe?platform=ios&type=simulator&app=UITests&apiLevel=11&deviceName=iPhone%207%20110
     router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Device failed to boot!");
     });
 
     const update = function (req, res, next) {
       const searchedString = req.params[0].split("/")[0];
-      DeviceManager.update(model, searchedString, req.query).then((devices) => {
+      DeviceManager.update(repository, searchedString, req.query).then((devices) => {
         res.json("Data is updated");
       })
     };
@@ -85,7 +83,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const refreshFilter = function (req, res, next) {
-      DeviceManager.refreshData(model, req.query).then(() => {
+      DeviceManager.refreshData(repository, req.query).then(() => {
         res.json("Data is refreshed");
       })
     };
@@ -107,14 +105,14 @@ export class DevicesRoute extends BaseRoute {
           case "ios":
           case "android":
           case "all":
-            DeviceManager.killAll(model, command);
+            DeviceManager.killAll(repository, command);
             res.json(`${params} are dead!`);
             break;
           default:
             break;
         }
       } else {
-        DeviceManager.killDevice(query, model).then(() => {
+        DeviceManager.killDevice(query, repository).then(() => {
           res.send("no query string");
         })
       }
@@ -153,12 +151,12 @@ export class DevicesRoute extends BaseRoute {
     this.render(req, res, "index", options);
   }
 
-  public static async refreshData(model: IModel) {
-    DeviceManager.killAll(model);
+  public static async refreshData(repository: IUnitOfWork) {
+    DeviceManager.killAll(repository);
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
-      DeviceManager.checkDeviceStatus(model, deviceMaxUsageTime);
+      DeviceManager.checkDeviceStatus(repository, deviceMaxUsageTime);
     }
     console.log("Data refreshed")
   }

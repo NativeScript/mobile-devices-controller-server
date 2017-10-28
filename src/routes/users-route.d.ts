@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IModel } from "../models/model";
+import { IUnitOfWork } from "../../db/interfaces/unit-of-work";
 /**
  * / route
  *
@@ -14,7 +14,7 @@ export declare class UsersRoute extends BaseRoute {
      * @method create
      * @static
      */
-    static create(router: Router, model: IModel): void;
+    static create(router: Router, repository: IUnitOfWork): void;
     /**
      * Constructor
      *

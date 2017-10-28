@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IModel } from "../models/model";
-import { IUserModel } from "../models/user";
+import { IUnitOfWork } from "../../db/interfaces/unit-of-work";
 
 /**
  * / route
@@ -17,7 +16,7 @@ export class UsersRoute extends BaseRoute {
    * @method create
    * @static
    */
-  public static create(router: Router, model: IModel) {
+  public static create(router: Router, repository: IUnitOfWork) {
     //log
     // model.user.create({name:"KOR1"});
     // model.user.create({name:"KOR2"});
@@ -28,9 +27,9 @@ export class UsersRoute extends BaseRoute {
 
 
     router.get("/users", (req: Request, res: Response, next: NextFunction) => {
-      model.user.find((error, users) => {
-        res.json(users);
-      });
+      // repository.users.find((error, users) => {
+      //   res.json(users);
+      // });
     });
   }
 
