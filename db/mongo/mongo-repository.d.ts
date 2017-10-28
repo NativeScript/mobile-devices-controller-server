@@ -5,7 +5,7 @@ export declare class MongoRepository<T extends Document> implements IRepository<
     constructor(entities: Model<T>);
     add(item: T): Promise<T>;
     get(query: any): Promise<Array<T>>;
-    find(query: any): Promise<Array<T>>;
+    find(query?: any): Promise<Array<T>>;
     findBySingle(query: any): Promise<T>;
     update(token: string, values: any): Promise<any>;
     remove(item: any): Promise<void>;

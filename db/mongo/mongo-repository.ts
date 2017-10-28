@@ -25,7 +25,7 @@ export class MongoRepository<T extends Document> implements IRepository<T> {
         return result;
     }
 
-    public async find(query): Promise<Array<T>> {
+    public async find(query?): Promise<Array<T>> {
         const result = await this._entitySet.find(query);
         if (!result) {
             return new Array<T>();

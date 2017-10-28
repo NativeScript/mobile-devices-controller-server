@@ -32,10 +32,10 @@ export class DeviceManager {
 
     public static async boot(repository: IUnitOfWork, query, count) {
         query.status = Status.SHUTDOWN;
-        let simulators = await DeviceManager.findDevices(repository, query);
+        let simulators = await repository.devices.find(query);
 
         const maxDevicesToBoot = Math.min(simulators.length, parseInt(count || 1));
-        const startedDevices = new Array();
+        const startedDevices = new Array<d.IDevice>();
         for (var index = 0; index < maxDevicesToBoot; index++) {
             let device: d.IDevice = simulators[index];
             if (device.type === DeviceType.SIMULATOR) {
@@ -51,7 +51,7 @@ export class DeviceManager {
         return startedDevices;
     }
 
-    public static async subscribeDevice(platform, deviceType, app, apiLevel, deviceName, model) {
+    public static async subscribeDevice(platform, deviceType, app, apiLevel, deviceName, repository: IUnitOfWork) {
         const status = Status.BOOTED;
         const searchQuery = {
             "platform": platform,
@@ -60,23 +60,23 @@ export class DeviceManager {
             "status": status,
             "apiLevel": apiLevel,
         };
-        let devices = await DeviceManager.findDevices(model, searchQuery);
+        let devices = await repository.devices.find(searchQuery);
 
         let device = null;
         const count = deviceType === Platform.ANDROID ? process.env.MAX_ANDROID_DEVICES_COUNT : process.env.MAX_IOS_DEVICES_COUNT || 1
         let busyDevices = 0;
         if (devices.length === 0) {
-            busyDevices = (await DeviceManager.findDevices(model, searchQuery)).length;
+            busyDevices = (await repository.devices.find(searchQuery)).length;
 
             if (busyDevices < count) {
-                devices = await DeviceManager.boot(model, searchQuery, 1);
+                devices = await DeviceManager.boot(repository, searchQuery, 1);
                 searchQuery.status = Status.BOOTED;
             }
         }
 
         if (devices && devices.length > 0 && busyDevices < count) {
             device = devices[0];
-            (await model.device.update(device, {
+            (await repository.devices.update(device, {
                 "status": Status.BUSY,
                 "busySince": Date.now(),
                 "info": app
@@ -132,7 +132,7 @@ export class DeviceManager {
         });
     }
 
-    public static async killDeviceSingle(device: d.IDevice, repository) {
+    public static async killDeviceSingle(device: d.IDevice, repository: IUnitOfWork) {
         if (device.type === DeviceType.SIMULATOR || device.platform === Platform.IOS) {
             IOSManager.kill(device.token.toString());
         } else {
@@ -146,7 +146,7 @@ export class DeviceManager {
         tempQuery.startedUsageAt = -1;
         tempQuery.holder = -1;
 
-        const log = await repository.device.update(device, (<Device>device).toJson());
+        const log = await repository.devices.update(device.token, (<Device>device).toJson());
         console.log(log);
     }
 
@@ -182,6 +182,10 @@ export class DeviceManager {
         if (!request.type || request.type.includes("android")) {
             await DeviceManager.loadDBWithAndroidDevices(repository);
         }
+
+        const devices = await repository.devices.find();
+
+        return devices;
     }
 
     public static checkDeviceStatus(repository: IUnitOfWork, maxUsageTime) {
@@ -195,12 +199,6 @@ export class DeviceManager {
                 }
             });
         }, 300000);
-    }
-
-    private static async findDevices(repository: IUnitOfWork, query) {
-        const simulators = await repository.devices.find(query);
-
-        return simulators;
     }
 
     private static copyIDeviceModelToDevice(deviceModel: d.IDevice, device?: Device): IDevice {

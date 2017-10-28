@@ -27,31 +27,18 @@ export class DevicesRoute extends BaseRoute {
     };
 
     router.get("/devices", getDevicesFilter, (req: Request, res: Response, next: NextFunction) => {
-      res.send("no query string");
+      res.send('');
     });
 
     const bootDeviceFilter = function (req, res, next) {
-      const platform = req.params[0].replace("/").trim().toLowerCase();
-      let maxDeviceCountToBoot = 1;
-      switch (platform) {
-        case "android":
-          req.query.platform = Platform.ANDROID;
-          maxDeviceCountToBoot = req.query.count || process.env.MAX_ANDROID_DEVICES_COUNT || 9999;
-          break;
-        case "ios":
-          req.query.platform = Platform.IOS;
-          maxDeviceCountToBoot = req.query.count || process.env.MAX_IOS_DEVICES_COUNT || 999;
-          break;
-        default:
-          break;
-      }
-
-      DeviceManager.boot(repository, req.query, maxDeviceCountToBoot).then((devices) => {
-        res.json("Devices are booted!" + devices);
+      const count = req.query.count;
+      delete req.query.count;
+      DeviceManager.boot(repository, req.query, count).then((devices) => {
+        res.json(devices);
       })
     };
 
-    router.get("/devices/boot/*", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+    router.get("/devices/boot*", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Device failed to boot!");
     });
 
@@ -73,7 +60,7 @@ export class DevicesRoute extends BaseRoute {
     const update = function (req, res, next) {
       const searchedString = req.params[0].split("/")[0];
       DeviceManager.update(repository, searchedString, req.query).then((devices) => {
-        res.json("Data is updated");
+        res.json(devices);
       })
     };
     //              /searchedDeviceToUpdate    ?update properties
@@ -83,8 +70,8 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const refreshFilter = function (req, res, next) {
-      DeviceManager.refreshData(repository, req.query).then(() => {
-        res.json("Data is refreshed");
+      DeviceManager.refreshData(repository, req.query).then((devices) => {
+        res.json(devices);
       })
     };
 
@@ -105,8 +92,9 @@ export class DevicesRoute extends BaseRoute {
           case "ios":
           case "android":
           case "all":
-            DeviceManager.killAll(repository, command);
-            res.json(`${params} are dead!`);
+            DeviceManager.killAll(repository, command).then(() => {
+              res.json(`${command} are dead!`);
+            });
             break;
           default:
             break;

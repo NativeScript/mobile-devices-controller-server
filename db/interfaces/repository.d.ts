@@ -3,6 +3,6 @@ export interface IRepository<T> {
     get(query: any): Promise<Array<T>>;
     remove(query: any): any;
     update(item: string, query: any): any;
-    find(query: any): Promise<Array<T>>;
+    find(query?: any): Promise<Array<T>>;
     dropDb(): Promise<void>;
 }
