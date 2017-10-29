@@ -29,7 +29,13 @@ export class LocalRepository<T> implements IRepository<T> {
         });
     }
 
-    public dropDb(){
+    public async findSingle(item): Promise<T> {
+        return new Promise<T>(() => {
+
+        });
+    }
+
+    public dropDb() {
         return null;
     }
 }

@@ -6,5 +6,6 @@ export declare class LocalRepository<T> implements IRepository<T> {
     update(item: string, values: any): Promise<void>;
     remove(item: any): Promise<void>;
     find(item: any): Promise<Array<T>>;
+    findSingle(item: any): Promise<T>;
     dropDb(): any;
 }

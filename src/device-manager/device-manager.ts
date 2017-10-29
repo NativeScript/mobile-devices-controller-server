@@ -51,7 +51,7 @@ export class DeviceManager {
         return startedDevices;
     }
 
-    public static async subscribeDevice(platform, deviceType, app, apiLevel, deviceName, repository: IUnitOfWork) {
+    public static async subscribeDevice(platform, deviceType, app, apiLevel, deviceName, count, repository: IUnitOfWork) {
         const status = Status.BOOTED;
         const searchQuery = {
             "platform": platform,
@@ -60,29 +60,29 @@ export class DeviceManager {
             "status": status,
             "apiLevel": apiLevel,
         };
-        let devices = await repository.devices.find(searchQuery);
+        let device = await repository.devices.findSingle(searchQuery);
 
-        let device = null;
-        const count = deviceType === Platform.ANDROID ? process.env.MAX_ANDROID_DEVICES_COUNT : process.env.MAX_IOS_DEVICES_COUNT || 1
+        count = (deviceType === Platform.ANDROID ? process.env.MAX_ANDROID_DEVICES_COUNT : process.env.MAX_IOS_DEVICES_COUNT) || count || 1
         let busyDevices = 0;
-        if (devices.length === 0) {
+        if (!device || device === null) {
+            searchQuery.status = Status.BUSY;
             busyDevices = (await repository.devices.find(searchQuery)).length;
 
             if (busyDevices < count) {
-                devices = await DeviceManager.boot(repository, searchQuery, 1);
+                device = (await DeviceManager.boot(repository, searchQuery, 1))[0];
                 searchQuery.status = Status.BOOTED;
             }
         }
 
-        if (devices && devices.length > 0 && busyDevices < count) {
-            device = devices[0];
-            (await repository.devices.update(device, {
+        if (device || device !== null && busyDevices < count) {
+            const result = await repository.devices.update(device.token, {
                 "status": Status.BUSY,
                 "busySince": Date.now(),
                 "info": app
-            }));
+            });
 
-            return device;
+            const updatedDevice = await repository.devices.findSingle({ 'token': device.token });
+            return DeviceManager.copyIDeviceModelToDevice(updatedDevice);
         }
 
         return device;
@@ -128,7 +128,7 @@ export class DeviceManager {
 
     public static async killDeviceSingle(device: d.IDevice, repository: IUnitOfWork) {
         if (device.type === DeviceType.SIMULATOR || device.platform === Platform.IOS) {
-            IOSManager.kill(device.token.toString());
+            IOSManager.kill(device.token);
         } else {
             AndroidManager.kill(DeviceManager.copyIDeviceModelToDevice(device));
         }
@@ -204,7 +204,11 @@ export class DeviceManager {
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.platform),
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.token),
                 DeviceManager.stringObjToPrimitiveConverter(deviceModel.status),
-                deviceModel.pid)
+                deviceModel.pid);
+            device.info = deviceModel.info;
+            device.config = deviceModel.config;
+            device.busySince = deviceModel.busySince;
+            device.startedAt = deviceModel.startedAt;
         } else {
             device.name = DeviceManager.stringObjToPrimitiveConverter(deviceModel.name);
             device.pid = deviceModel.pid;
@@ -214,6 +218,8 @@ export class DeviceManager {
             device.type = DeviceManager.stringObjToPrimitiveConverter(deviceModel.type);
             device.platform = DeviceManager.stringObjToPrimitiveConverter(deviceModel.platform);
             device.apiLevel = DeviceManager.stringObjToPrimitiveConverter(deviceModel.apiLevel);
+            device.info = DeviceManager.stringObjToPrimitiveConverter(deviceModel.info);
+            device.config = DeviceManager.stringObjToPrimitiveConverter(deviceModel.config);
         }
 
         return device;
@@ -223,9 +229,11 @@ export class DeviceManager {
         deviceModel.name = device.name;
         deviceModel.pid = device.pid;
         deviceModel.startedAt = device.startedAt;
-        deviceModel.status = device.status.toString();
-        deviceModel.token = device.token.toString();
+        deviceModel.status = device.status;
+        deviceModel.token = device.token;
         deviceModel.type = device.type;
+        deviceModel.info = device.info;
+        deviceModel.config = device.config;
         deviceModel.apiLevel = device.apiLevel;
     }
 

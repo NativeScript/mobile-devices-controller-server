@@ -4,5 +4,6 @@ export interface IRepository<T> {
     remove(query);
     update(item: string, query);
     find(query?): Promise<Array<T>>;
+    findSingle(query): Promise<T>;
     dropDb(): Promise<void>;
 }

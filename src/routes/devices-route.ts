@@ -44,15 +44,15 @@ export class DevicesRoute extends BaseRoute {
 
     const subscribeDeviceFilter = function (req, res, next) {
       const query = req.query;
-      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel || !query.deviceName) {
+      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel || !query.name) {
         res.json("Data failed to update!");
       }
-      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.deviceName, repository).then((device) => {
+      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.name, query.count, repository).then((device) => {
         res.json(device);
       });
     };
 
-    // http://localhost:3000/devices/subscribe?platform=ios&type=simulator&app=UITests&apiLevel=11&deviceName=iPhone%207%20110
+    // http://localhost:3000/devices/subscribe?type=simulator&name=iPhone%207%20110&app=Test&apiLevel=11.0&platform=ios
     router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Device failed to boot!");
     });
@@ -63,7 +63,7 @@ export class DevicesRoute extends BaseRoute {
         res.json(devices);
       })
     };
-    
+
     //http://localhost:3000/devices/update/type=simulator&status=shutdown&name=iPhone%206?name=KOr
     router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
       res.json("Data failed to update!");
