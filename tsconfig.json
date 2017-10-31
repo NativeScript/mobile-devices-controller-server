@@ -14,24 +14,17 @@
         ],
         "lib": [
             "dom",
-            "es2015.iterable",
-            "es2015.promise",
             "es2015"
         ],
         "baseUrl": ".",
         "paths": {
             "*": [
                 "./node_modules/*"
-            ],
-            "db":[
-                "./db/*"
             ]
         }
     },
     "include": [
-        "src",
-        "models",
-        "repository"
+        "src"
     ],
     "exclude": [
         "node_modules"

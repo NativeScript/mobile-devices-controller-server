@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IUnitOfWork } from "../../db/interfaces/unit-of-work";
+import { IUnitOfWork } from "mobile-devices-manager";
 /**
  * / route
  *

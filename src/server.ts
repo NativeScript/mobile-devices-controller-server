@@ -10,9 +10,13 @@ import methodOverride = require("method-override");
 import { IndexRoute } from "./routes/index";
 import { UsersRoute } from "./routes/users-route";
 import { DevicesRoute } from "./routes/devices-route";
-import { IUnitOfWork } from "../db/interfaces/unit-of-work";
-import { LocalRepositoryUnitOfWork } from "../db/local/local-unit-of-work";
-import { MongoUnitOfWork } from "../db/mongo/mongodb-unit-of-work";
+import {
+  IUnitOfWork,
+  DeviceManager,
+  LocalUnitOfWork,
+  MongoUnitOfWork
+} from "mobile-devices-manager";
+
 
 /**
  * The server.
@@ -22,6 +26,7 @@ import { MongoUnitOfWork } from "../db/mongo/mongodb-unit-of-work";
 export class Server {
 
   private _unitOfWork: IUnitOfWork;
+  private _deviceManager: DeviceManager;
 
   public app: express.Application;
 
@@ -46,11 +51,12 @@ export class Server {
   constructor() {
 
     if (process.env.LOCAL_DB) {
-      this._unitOfWork = new LocalRepositoryUnitOfWork();
-    } else {
-      this._unitOfWork = new MongoUnitOfWork();
+      this._unitOfWork = new LocalUnitOfWork();
+   } else {
+     this._unitOfWork = new MongoUnitOfWork();
     }
 
+    this._deviceManager = new DeviceManager(this._unitOfWork);
     //create expressjs application
     this.app = express();
 
@@ -116,7 +122,7 @@ export class Server {
     //error handling
     this.app.use(errorHandler());
 
-    await DevicesRoute.refreshData(this._unitOfWork);
+    await this._deviceManager.refreshData();
   }
 
   /**
@@ -133,7 +139,7 @@ export class Server {
     //IndexRoute
     IndexRoute.create(router);
     //UsersRoute.create(router, this._unitOfWork);
-    DevicesRoute.create(router, this._unitOfWork);
+    DevicesRoute.create(router, this._unitOfWork,this._deviceManager);
 
     //use router middleware
     this.app.use(router);

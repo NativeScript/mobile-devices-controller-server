@@ -6,6 +6,7 @@ import * as express from "express";
  */
 export declare class Server {
     private _unitOfWork;
+    private _deviceManager;
     app: express.Application;
     /**
      * Bootstrap the application.

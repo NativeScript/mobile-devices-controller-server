@@ -1,8 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { DeviceManager } from "../device-manager/device-manager";
+import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
 import { Platform, DeviceType } from "mobile-devices-controller";
-import { IUnitOfWork } from "../../db/interfaces/unit-of-work";
 
 /**
  * / route
@@ -18,7 +17,7 @@ export class DevicesRoute extends BaseRoute {
    * @method create
    * @static
    */
-  public static create(router: Router, repository: IUnitOfWork) {
+  public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
 
     const getDevicesFilter = function (req, res, next) {
       repository.devices.find(req.query).then((devices) => {
@@ -33,7 +32,7 @@ export class DevicesRoute extends BaseRoute {
     const bootDeviceFilter = function (req, res, next) {
       const count = req.query.count;
       delete req.query.count;
-      DeviceManager.boot(repository, req.query, count).then((devices) => {
+      deviceManager.boot(req.query, count).then((devices) => {
         res.json(devices);
       })
     };
@@ -47,7 +46,7 @@ export class DevicesRoute extends BaseRoute {
       if (!query || !query.platform || !query.type || !query.app || !query.apiLevel || !query.name) {
         res.json("Data failed to update!");
       }
-      DeviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.name, query.count, repository).then((device) => {
+      deviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.name, query.count).then((device) => {
         res.json(device);
       });
     };
@@ -59,7 +58,7 @@ export class DevicesRoute extends BaseRoute {
 
     const update = function (req, res, next) {
       const searchedString = req.params[0].split("/")[0];
-      DeviceManager.update(repository, searchedString, req.query).then((devices) => {
+      deviceManager.update(searchedString, req.query).then((devices) => {
         res.json(devices);
       })
     };
@@ -70,7 +69,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const refreshFilter = function (req, res, next) {
-      DeviceManager.refreshData(repository, req.query).then((devices) => {
+      deviceManager.refreshData(req.query).then((devices) => {
         res.json(devices);
       })
     };
@@ -92,7 +91,7 @@ export class DevicesRoute extends BaseRoute {
           case "ios":
           case "android":
           case "all":
-            DeviceManager.killAll(repository, command).then(() => {
+          deviceManager.killAll(command).then(() => {
               res.json(`${command} are dead!`);
             });
             break;
@@ -100,7 +99,7 @@ export class DevicesRoute extends BaseRoute {
             break;
         }
       } else {
-        DeviceManager.killDevice(query, repository).then(() => {
+        deviceManager.killDevice(query, repository).then(() => {
           res.send("no query string");
         })
       }
@@ -139,12 +138,12 @@ export class DevicesRoute extends BaseRoute {
     this.render(req, res, "index", options);
   }
 
-  public static async refreshData(repository: IUnitOfWork) {
-    DeviceManager.killAll(repository);
+  public static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
+    deviceManager.killAll();
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
-      DeviceManager.checkDeviceStatus(repository, deviceMaxUsageTime);
+      deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
     console.log("Data refreshed")
   }
