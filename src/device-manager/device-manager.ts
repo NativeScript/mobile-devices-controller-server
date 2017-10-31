@@ -61,8 +61,7 @@ export class DeviceManager {
             "apiLevel": apiLevel,
         };
         let device = await repository.devices.findSingle(searchQuery);
-
-        count = (deviceType === Platform.ANDROID ? process.env.MAX_ANDROID_DEVICES_COUNT : process.env.MAX_IOS_DEVICES_COUNT) || count || 1
+        count = (deviceType === Platform.ANDROID ? process.env.MAX_ANDROID_DEVICES_COUNT : process.env.MAX_IOS_DEVICES_COUNT) || 1
         let busyDevices = 0;
         if (!device || device === null) {
             searchQuery.status = Status.BUSY;
@@ -74,6 +73,8 @@ export class DeviceManager {
             }
         }
 
+        let searchedDevice = null;
+
         if (device || device !== null && busyDevices < count) {
             const result = await repository.devices.update(device.token, {
                 "status": Status.BUSY,
@@ -82,10 +83,10 @@ export class DeviceManager {
             });
 
             const updatedDevice = await repository.devices.findSingle({ 'token': device.token });
-            return DeviceManager.copyIDeviceModelToDevice(updatedDevice);
+            searchedDevice = DeviceManager.copyIDeviceModelToDevice(updatedDevice);
         }
 
-        return device;
+        return searchedDevice;
     }
 
     public static async update(repository: IUnitOfWork, searchQuery, udpateQuery) {
