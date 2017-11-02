@@ -34,3 +34,7 @@ export declare class DevicesRoute extends BaseRoute {
     get(req: Request, res: Response, next: NextFunction): void;
     static refreshData(repository: IUnitOfWork, deviceManager: DeviceManager): Promise<void>;
 }
+export declare class LinkPromises {
+    testPromise: Promise<any>;
+    chain(pr: () => Promise<any>): Promise<any>;
+}
