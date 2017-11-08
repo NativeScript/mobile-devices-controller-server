@@ -49,11 +49,10 @@ export class Server {
    * @constructor
    */
   constructor() {
-
-    if (process.env.LOCAL_DB) {
+    if (process.env.USE_MONGODB_STORAGE) {
+      this._unitOfWork = new MongoUnitOfWork();
+    } else {
       this._unitOfWork = new LocalUnitOfWork();
-   } else {
-     this._unitOfWork = new MongoUnitOfWork();
     }
 
     this._deviceManager = new DeviceManager(this._unitOfWork);
@@ -121,8 +120,6 @@ export class Server {
 
     //error handling
     this.app.use(errorHandler());
-
-    await this._deviceManager.refreshData();
   }
 
   /**
@@ -136,13 +133,10 @@ export class Server {
     let router: express.Router;
     router = express.Router();
 
-    //IndexRoute
     IndexRoute.create(router);
-    //UsersRoute.create(router, this._unitOfWork);
-    DevicesRoute.create(router, this._unitOfWork,this._deviceManager);
+    DevicesRoute.create(router, this._unitOfWork, this._deviceManager);
 
     //use router middleware
-    this.app.use(router);
+    this.app.use("/api", router);
   }
-
 }

@@ -6,18 +6,44 @@ import { Platform, DeviceType } from "mobile-devices-controller";
 /**
  * / route
  *
- * @class Device
+ * @class DevicesRoute
  */
 export class DevicesRoute extends BaseRoute {
 
   /**
    * Create the routes.
    *
-   * @class IndexRoute
+   * @class DevicesRoute
    * @method create
    * @static
    */
   public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
+    const subscribtionQueue: { (): Promise<void> }[] = [];
+
+    function pushSubscription(action: () => Promise<void>): void {
+      subscribtionQueue.push(action);
+      console.log("Push subscription: " + subscribtionQueue.length);
+      if (subscribtionQueue.length === 1) {
+        processNextSubscription();
+      }
+    }
+
+    function processNextSubscription(): void {
+      const next = subscribtionQueue[0];
+      function onNextCompleted() {
+        subscribtionQueue.shift()
+        console.log("Complete! " + subscribtionQueue.length);
+        if (subscribtionQueue.length > 0) {
+          processNextSubscription();
+        }
+      }
+      console.log("Process next: " + subscribtionQueue.length);
+      next().then(onNextCompleted, onNextCompleted);
+    }
+
+    pushSubscription(async () => {
+      await DevicesRoute.refreshData(repository, deviceManager);
+    });
 
     const getDevicesFilter = function (req, res, next) {
       repository.devices.find(req.query).then((devices) => {
@@ -30,115 +56,94 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const bootDeviceFilter = function (req, res, next) {
-      const count = req.query.count;
-      delete req.query.count;
-      deviceManager.boot(req.query, count).then((devices) => {
-        res.json(devices);
-      })
+      pushSubscription(async () => {
+        const count = req.query.count;
+        delete req.query.count;
+        await deviceManager.boot(req.query, count).then((devices) => {
+          res.json(devices);
+        }, (device) => {
+          res.json(`Failed to boot device ${device}`);
+        });
+      });
     };
 
     router.get("/devices/boot*", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Device failed to boot!");
     });
 
-    const linkPromises = new LinkPromises();
-
-
     const subscribeDeviceFilter = function (req, res, next) {
-      const query = req.query;
-      if (!query || !query.platform || !query.type || !query.app || !query.apiLevel || !query.name) {
-        res.json("Data failed to update!");
-      }
-      linkPromises.chain(() => new Promise((resolve, reject) => {
-        deviceManager.subscribeDevice(query.platform, query.type, query.app, query.apiLevel, query.name, query.count).then((device) => {
-          resolve();
+      pushSubscription(async () => {
+        const query = req.query;
+        if (!query || !query.platform || !query.type || !query.info || !query.apiLevel || !query.name) {
+          res.json("Missing required filter");
+        }
+        await deviceManager.subscribeDevice(query).then((device) => {
           res.json(device);
+        }, () => {
+          console.log("Fail!");
+          res.json("Device failed to boot!");
         });
-      })).then().catch(() => req.json("KOOOOR"));
+      });
     };
 
-    // http://localhost:3000/devices/subscribe?type=simulator&name=iPhone%207%20110&app=Test&apiLevel=11.0&platform=ios
+    // http://localhost:8000/api/devices/subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios
     router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Filed to subscribe!");
+    });
+
+    const unsubscribeDeviceFilter = function (req, res, next) {
+      pushSubscription(async () => {
+        const query = req.query;
+        if (!query && !query.token) {
+          res.json("Missing required token para,");
+        }
+        await deviceManager.unSubscribeDevice(query).then((device) => {
+          res.json(device);
+        }, () => {
+          res.json("Filed to unsubscribe!");
+        });
+      });
+    };
+
+    // http://localhost:8000/api/devices/unsubscribe?token=223423
+    router.get("/devices/unsubscribe", unsubscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+      console.log("Fail!");
       res.json("Device failed to boot!");
     });
 
-    // const update = function (req, res, next) {
-    //   const searchedString = req.params[0].split("/")[0];
-    //   deviceManager.update(searchedString, req.query).then((devices) => {
-    //     res.json(devices);
-    //   })
-    // };
+    const update = function (req, res, next) {
+      pushSubscription(async () => {
+        const searchedString = req.params[0].split("/")[0];
+        deviceManager.update(searchedString, req.query).then((devices) => {
+          res.json(devices);
+        })
+      });
+    }
 
     // //http://localhost:3000/devices/update/type=simulator&status=shutdown&name=iPhone%206?name=KOr
-    // router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
-    //   res.json("Data failed to update!");
-    // });
+    router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Data failed to update!");
+    });
 
-    // const refreshFilter = function (req, res, next) {
-    //   deviceManager.refreshData(req.query).then((devices) => {
-    //     res.json(devices);
-    //   })
-    // };
+    const refreshFilter = function (req, res, next) {
+      deviceManager.refreshData(req.query).then((devices) => {
+        res.json(devices);
+      })
+    };
 
-    // router.get("/devices/refresh", refreshFilter, (req: Request, res: Response, next: NextFunction) => {
-    //   res.json("Data failed to refresh!");
-    // });
+    router.get("/devices/refresh", refreshFilter, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Data failed to refresh!");
+    });
 
-    // // devices/kill/all
-    // // devices/kill/ios
-    // // devices/kill/android
-    // // devices/kill?name=Emulator-Api21-Default
-    // router.get("/devices/kill*", (req: Request, res: Response, next: NextFunction) => {
-    //   const params = req.params;
-    //   const query = req.query;
-    //   if (!query.hasOwnProperty() && params[0] !== "") {
-    //     const command = params[0].replace("/", "").trim().toLowerCase();
-    //     switch (command) {
-    //       case "ios":
-    //       case "android":
-    //       case "all":
-    //         deviceManager.killAll(command).then(() => {
-    //           res.json(`${command} are dead!`);
-    //         });
-    //         break;
-    //       default:
-    //         break;
-    //     }
-    //   } else {
-    //     deviceManager.killDevice(query, repository).then(() => {
-    //       res.send("no query string");
-    //     })
-    //   }
-    // });
+    // api/devices/kill?platform=android
+    // api/devices/kill?name=Emulator-Api21-Default
+    router.get("/devices/kill", (req: Request, res: Response, next: NextFunction) => {
+      deviceManager.killDevices(req.query).then(() => {
+        res.send("no query string");
+      });
+    });
   }
 
-  // public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
-
-  //       const linkPromises = new LinkPromises();
-  //       const test = function (req, res: Response, next) {
-  //         linkPromises.chain(() => new Promise((resolve, reject) => {
-  //           setTimeout(() => {
-  //             console.log("YEBREEEE", req.query);
-  //             resolve();
-  //             res.json("KOOOR: " + req.query);
-  //           }, req.query.timeout);
-  //         })).then(() => {
-  //         }).catch(() => req.json("KOOOOR"));
-  //       }
-
-  //       router.get("/test*", test, (req: Request, res: Response, next: NextFunction) => {
-  //         res.send('');
-  //       });
-  //     }
-  //   }
-
-
-  /**
-   * Constructor
-   *
-   * @class IndexRoute
-   * @constructor
-   */
   constructor() {
     super();
   }
@@ -146,7 +151,7 @@ export class DevicesRoute extends BaseRoute {
   /**
    * The home page route.
    *
-   * @class IndexRoute
+   * @class DeviceRoute
    * @method index
    * @param req {Request} The express Request object.
    * @param res {Response} The express Response object.
@@ -154,7 +159,7 @@ export class DevicesRoute extends BaseRoute {
    */
   public get(req: Request, res: Response, next: NextFunction) {
     //set custom title
-    this.title = "Home | Device manager server!";
+    this.title = "Devices | Device manager server!";
 
     //set message
     let options: Object = {
@@ -162,28 +167,17 @@ export class DevicesRoute extends BaseRoute {
     };
 
     //render template
-    this.render(req, res, "index", options);
+    this.render(req, res, "devices", options);
   }
 
-  public static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
-    deviceManager.killAll();
+  private static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
+    console.log("Refreshing data!!!")
+    await deviceManager.killDevices();
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
       deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
-    console.log("Data refreshed")
-  }
-}
-
-export class LinkPromises {
-  testPromise: Promise<any> = new Promise((resolve, err) => resolve());
-
-  public chain(pr: () => Promise<any>) {
-
-    this.testPromise = this.testPromise.then(() => pr());
-
-    return this.testPromise;
-
+    console.log("Data refreshed!!!")
   }
 }
