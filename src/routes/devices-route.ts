@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
-import { Platform, DeviceType } from "mobile-devices-controller";
 
 /**
  * / route
