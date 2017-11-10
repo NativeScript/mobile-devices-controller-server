@@ -67,14 +67,14 @@ export class DevicesRoute extends BaseRoute {
       });
     };
 
-    router.get("/devices/boot*", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
+    router.get("/devices/boot", bootDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Device failed to boot!");
     });
 
     const subscribeDeviceFilter = function (req, res, next) {
       pushSubscription(async () => {
         const query = req.query;
-        if (!query || !query.platform || !query.type || !query.info || !query.apiLevel || !query.name) {
+        if (!query || (!query.platform && !query.type) || !query.info || !query.apiLevel || !query.name) {
           res.json("Missing required filter");
         }
         await deviceManager.subscribeDevice(query).then((device) => {
@@ -95,7 +95,7 @@ export class DevicesRoute extends BaseRoute {
       pushSubscription(async () => {
         const query = req.query;
         if (!query && !query.token) {
-          res.json("Missing required token para,");
+          res.json("Missing required token param");
         }
         await deviceManager.unSubscribeDevice(query).then((device) => {
           res.json(device);
