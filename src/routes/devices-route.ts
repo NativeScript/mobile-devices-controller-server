@@ -85,7 +85,7 @@ export class DevicesRoute extends BaseRoute {
       });
     };
 
-    // http://localhost:8000/api/devices/subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios
+    // http://localhost:8000/api/v1/devices/subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios
     router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Filed to subscribe!");
     });
@@ -104,7 +104,7 @@ export class DevicesRoute extends BaseRoute {
       });
     };
 
-    // http://localhost:8000/api/devices/unsubscribe?token=223423
+    // http://localhost:8000/api/devices/unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5
     router.get("/devices/unsubscribe", unsubscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       console.log("Fail!");
       res.json("Device failed to boot!");
@@ -120,12 +120,12 @@ export class DevicesRoute extends BaseRoute {
     }
 
     // //http://localhost:3000/devices/update/type=simulator&status=shutdown&name=iPhone%206?name=KOr
-    router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
-      res.json("Data failed to update!");
-    });
+    // router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
+    //   res.json("Data failed to update!");
+    // });
 
     const refreshFilter = function (req, res, next) {
-      deviceManager.refreshData(req.query).then((devices) => {
+      deviceManager.refreshData(req.query, {}).then((devices) => {
         res.json(devices);
       })
     };

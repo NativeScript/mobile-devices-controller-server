@@ -120,6 +120,14 @@ export class Server {
 
     //error handling
     this.app.use(errorHandler());
+
+    this.app.use(function (req, res, next) {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.setHeader('Access-Control-Allow-Credentials', 'true');
+      next();
+    });
   }
 
   /**
@@ -137,6 +145,6 @@ export class Server {
     DevicesRoute.create(router, this._unitOfWork, this._deviceManager);
 
     //use router middleware
-    this.app.use("/api", router);
+    this.app.use("/api/v1/", router);
   }
 }
