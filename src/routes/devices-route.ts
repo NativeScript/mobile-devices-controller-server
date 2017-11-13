@@ -47,6 +47,8 @@ export class DevicesRoute extends BaseRoute {
     const getDevicesFilter = function (req, res, next) {
       repository.devices.find(req.query).then((devices) => {
         res.json(devices);
+      }).catch((error) => {
+        res.json(error);
       });
     };
 
@@ -60,8 +62,8 @@ export class DevicesRoute extends BaseRoute {
         delete req.query.count;
         await deviceManager.boot(req.query, count).then((devices) => {
           res.json(devices);
-        }, (device) => {
-          res.json(`Failed to boot device ${device}`);
+        }, (err) => {
+          res.json(`Failed to boot device ${err}`);
         });
       });
     };
