@@ -1,36 +1,30 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IModel } from "../models/model";
+import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
 /**
  * / route
  *
- * @class Device
+ * @class DevicesRoute
  */
 export declare class DevicesRoute extends BaseRoute {
     /**
      * Create the routes.
      *
-     * @class IndexRoute
+     * @class DevicesRoute
      * @method create
      * @static
      */
-    static create(router: Router, model: IModel): void;
-    /**
-     * Constructor
-     *
-     * @class IndexRoute
-     * @constructor
-     */
+    static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager): void;
     constructor();
     /**
      * The home page route.
      *
-     * @class IndexRoute
+     * @class DeviceRoute
      * @method index
      * @param req {Request} The express Request object.
      * @param res {Response} The express Response object.
      * @next {NextFunction} Execute the next method.
      */
     get(req: Request, res: Response, next: NextFunction): void;
-    static refreshData(model: IModel): Promise<void>;
+    private static refreshData(repository, deviceManager);
 }

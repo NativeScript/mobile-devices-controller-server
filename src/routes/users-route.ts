@@ -1,7 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { IModel } from "../models/model";
-import { IUserModel } from "../models/user";
+import { IUnitOfWork } from "mobile-devices-manager";
 
 /**
  * / route
@@ -17,20 +16,20 @@ export class UsersRoute extends BaseRoute {
    * @method create
    * @static
    */
-  public static create(router: Router, model: IModel) {
+  public static create(router: Router, repository: IUnitOfWork) {
     //log
-    // model.user.create({name:"KOR1"});
-    // model.user.create({name:"KOR2"});
-    // model.user.create({name:"KOR3"});
-    // model.user.create({name:"KOR4"}).catch((er)=>{
+    // model.user.create({name:"test1"});
+    // model.user.create({name:"test2"});
+    // model.user.create({name:"test3"});
+    // model.user.create({name:"test4"}).catch((er)=>{
     //   console.log(er);
     // });
 
 
     router.get("/users", (req: Request, res: Response, next: NextFunction) => {
-      model.user.find((error, users) => {
-        res.json(users);
-      });
+      // repository.users.find((error, users) => {
+      //   res.json(users);
+      // });
     });
   }
 
