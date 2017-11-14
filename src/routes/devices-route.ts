@@ -139,8 +139,8 @@ export class DevicesRoute extends BaseRoute {
     // api/devices/kill?platform=android
     // api/devices/kill?name=Emulator-Api21-Default
     router.get("/devices/kill", (req: Request, res: Response, next: NextFunction) => {
-      deviceManager.killDevices(req.query).then(() => {
-        res.send("no query string");
+      deviceManager.killDevices(req.query).then((devices) => {
+        res.send(devices);
       });
     });
   }
