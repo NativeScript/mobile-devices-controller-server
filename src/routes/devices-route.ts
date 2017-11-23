@@ -75,15 +75,17 @@ export class DevicesRoute extends BaseRoute {
     const subscribeDeviceFilter = function (req, res, next) {
       pushSubscription(async () => {
         const query = req.query;
-        if (!query || (!query.platform && !query.type) || !query.info || !query.apiLevel || !query.name) {
+        if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
           res.json("Missing required filter");
+        } else {
+          console.log('Requested query: ',query);
+          await deviceManager.subscribeDevice(query).then((device) => {
+            res.json(device);
+          }, () => {
+            console.log("Fail!");
+            res.json("Device failed to boot!");
+          });
         }
-        await deviceManager.subscribeDevice(query).then((device) => {
-          res.json(device);
-        }, () => {
-          console.log("Fail!");
-          res.json("Device failed to boot!");
-        });
       });
     };
 
@@ -173,7 +175,7 @@ export class DevicesRoute extends BaseRoute {
 
   private static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
     console.log("Refreshing data!!!")
-    await deviceManager.killDevices();
+    //await deviceManager.killDevices();
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
