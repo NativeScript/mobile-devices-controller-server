@@ -78,7 +78,7 @@ export class DevicesRoute extends BaseRoute {
         if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
           res.json("Missing required filter");
         } else {
-          console.log('Requested query: ',query);
+          console.log('Requested query: ', query);
           await deviceManager.subscribeDevice(query).then((device) => {
             res.json(device);
           }, () => {
@@ -116,17 +116,23 @@ export class DevicesRoute extends BaseRoute {
 
     const update = function (req, res, next) {
       pushSubscription(async () => {
-        const searchedString = req.params[0].split("/")[0];
-        deviceManager.update(searchedString, req.query).then((devices) => {
+        const token = req.query.token
+        delete req.query.token;
+        delete req.query.name;
+        delete req.query.apiLevel;
+        delete req.query.type;
+
+        const queryToUpdate = req.query;
+        deviceManager.update(token, queryToUpdate).then((devices) => {
           res.json(devices);
         })
       });
     }
 
-    // //http://localhost:3000/devices/update/type=simulator&status=shutdown&name=iPhone%206?name=KOr
-    // router.get("/devices/update", update, (req: Request, res: Response, next: NextFunction) => {
-    //   res.json("Data failed to update!");
-    // });
+    // //http://localhost:3000/devices/update?token=token&status=shutdown
+    router.get("/devices/udpate", update, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Data failed to update!");
+    });
 
     const refreshFilter = function (req, res, next) {
       deviceManager.refreshData(req.query, {}).then((devices) => {
