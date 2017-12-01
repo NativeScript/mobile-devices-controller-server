@@ -4,10 +4,14 @@
   "version": "1.0.0",
   "author": "SvetoslavTSenov",
   "scripts": {
+    "prepare": "tsc",
     "dev": "NODE_ENV=development nodemon ./bin/www",
     "test": "mocha dist/test",
     "start": "tsc && node ./bin/www",
     "watch": "tsc --watch"
+  },
+  "bin": {
+    "ns-server": "./bin/www"
   },
   "dependencies": {
     "body-parser": "^1.15.2",
@@ -15,7 +19,7 @@
     "errorhandler": "^1.4.3",
     "express": "^4.14.0",
     "method-override": "^2.3.6",
-    "mobile-devices-manager": "file:../mobile-devices-manager",
+    "mobile-devices-manager": "^1.0.0",
     "morgan": "^1.7.0",
     "pug": "^2.0.0-beta6",
     "q": "^1.4.1"

@@ -49,15 +49,14 @@ export class Server {
    * @constructor
    */
   constructor() {
-    let isLocalRepository = true;
-    if (process.env['USE_MONOGDB_STORAGE']) {
-      isLocalRepository = false;
+    const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 ? false : process.env['USE_MONOGDB_STORAGE'] || true;
+    if (!useLocalRepository) {
       this._unitOfWork = new MongoUnitOfWork();
     } else {
       this._unitOfWork = new LocalUnitOfWork();
     }
 
-    this._deviceManager = new DeviceManager(this._unitOfWork, isLocalRepository);
+    this._deviceManager = new DeviceManager(this._unitOfWork, useLocalRepository);
     //create expressjs application
     this.app = express();
 

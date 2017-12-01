@@ -2,15 +2,16 @@
 "use strict";
 
 //module dependencies
-var server = require("../src/server");
-var debug = require("debug")("express:server");
-var http = require("http");
+const server = require("../src/server");
+const debug = require("debug")("express:server");
+const http = require("http");
 
 //create http server
-var httpPort = normalizePort(process.env.PORT || 8000);
-var app = server.Server.bootstrap().app;
+const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8000;
+const httpPort = normalizePort(portAsTerminalArg || process.env.PORT || 8000);
+const app = server.Server.bootstrap().app;
 app.set("port", httpPort);
-var httpServer = http.createServer(app);
+const httpServer = http.createServer(app);
 
 //listen on provided ports
 httpServer.listen(httpPort);
@@ -24,7 +25,7 @@ httpServer.on("listening", onListening);
  * Normalize a port into a number, string, or false.
  */
 function normalizePort(val) {
-  var port = parseInt(val, 10);
+  const port = parseInt(val, 10);
 
   if (isNaN(port)) {
     // named pipe
@@ -47,7 +48,7 @@ function onError(error) {
     throw error;
   }
 
-  var bind = typeof httpPort === "string"
+  const bind = typeof httpPort === "string"
     ? "Pipe " + httpPort
     : "Port " + httpPort;
 
@@ -70,8 +71,8 @@ function onError(error) {
  * Event listener for HTTP server "listening" event.
  */
 function onListening() {
-  var addr = httpServer.address();
-  var bind = typeof addr === "string"
+  const addr = httpServer.address();
+  const bind = typeof addr === "string"
     ? "pipe " + addr
     : "port " + addr.port;
   debug("Listening on " + bind);
