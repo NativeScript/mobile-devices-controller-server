@@ -79,7 +79,7 @@ export class DevicesRoute extends BaseRoute {
           res.json("Missing required filter");
         } else {
           console.log('Requested query: ', query);
-          await deviceManager.subscribeDevice(query).then((device) => {
+          await deviceManager.subscribeForDevice(query).then((device) => {
             res.json(device);
           }, () => {
             console.log("Fail!");
@@ -100,7 +100,7 @@ export class DevicesRoute extends BaseRoute {
         if (!query && !query.token) {
           res.json("Missing required token param");
         }
-        await deviceManager.unSubscribeDevice(query).then((device) => {
+        await deviceManager.unsubscribeFromDevice(query).then((device) => {
           res.json(device);
         }, () => {
           res.json("Filed to unsubscribe!");
@@ -181,7 +181,7 @@ export class DevicesRoute extends BaseRoute {
 
   private static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
     console.log("Refreshing data!!!")
-    //await deviceManager.killDevices();
+    await deviceManager.killDevices();
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {

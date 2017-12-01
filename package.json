@@ -7,7 +7,7 @@
     "dev": "NODE_ENV=development nodemon ./bin/www",
     "test": "mocha dist/test",
     "start": "tsc && node ./bin/www",
-    "compile": "tsc --watch"
+    "watch": "tsc --watch"
   },
   "dependencies": {
     "body-parser": "^1.15.2",
