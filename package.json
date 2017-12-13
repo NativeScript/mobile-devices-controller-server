@@ -1,5 +1,5 @@
 {
-  "name": "mobile-devices-controll-server",
+  "name": "mobile-devices-controller-server",
   "description": "Comunicate with emulators, simulators and real devices",
   "version": "1.0.0",
   "author": "SvetoslavTSenov",
