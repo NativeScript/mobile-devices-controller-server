@@ -7,8 +7,8 @@ const debug = require("debug")("express:server");
 const http = require("http");
 
 //create http server
-const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8000;
-const httpPort = normalizePort(portAsTerminalArg || process.env.PORT || 8000);
+const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8700;
+const httpPort = normalizePort(portAsTerminalArg || process.env.DEVICE_MANAGER_PORT || 8000);
 const app = server.Server.bootstrap().app;
 app.set("port", httpPort);
 const httpServer = http.createServer(app);

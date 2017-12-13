@@ -17,15 +17,6 @@ export class UsersRoute extends BaseRoute {
    * @static
    */
   public static create(router: Router, repository: IUnitOfWork) {
-    //log
-    // model.user.create({name:"test1"});
-    // model.user.create({name:"test2"});
-    // model.user.create({name:"test3"});
-    // model.user.create({name:"test4"}).catch((er)=>{
-    //   console.log(er);
-    // });
-
-
     router.get("/users", (req: Request, res: Response, next: NextFunction) => {
       // repository.users.find((error, users) => {
       //   res.json(users);

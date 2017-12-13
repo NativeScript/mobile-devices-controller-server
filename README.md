@@ -39,6 +39,7 @@ Install the node packages via:
 |command                |Purpose|
 |:-------------------------------:|:-------------------:|
 |`--port`|Specify port to run server.|
+|`DEVICE_MANAGER_PORT`|Specify port to run server as env variable|
 |`--mongodb`|Should use mongodb storage.|
 |`USE_MONOGDB_STORAGE`|Use env variable to specify storage|
 

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
+import { Subscribe } from "../utils/subscription";
 
 /**
  * / route
@@ -8,7 +9,7 @@ import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
  * @class DevicesRoute
  */
 export class DevicesRoute extends BaseRoute {
-
+  private static _subscribe: Subscribe = new Subscribe();
   /**
    * Create the routes.
    *
@@ -17,30 +18,8 @@ export class DevicesRoute extends BaseRoute {
    * @static
    */
   public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
-    const subscribtionQueue: { (): Promise<void> }[] = [];
 
-    function pushSubscription(action: () => Promise<void>): void {
-      subscribtionQueue.push(action);
-      console.log("Push subscription: " + subscribtionQueue.length);
-      if (subscribtionQueue.length === 1) {
-        processNextSubscription();
-      }
-    }
-
-    function processNextSubscription(): void {
-      const next = subscribtionQueue[0];
-      function onNextCompleted() {
-        subscribtionQueue.shift()
-        console.log("Complete! " + subscribtionQueue.length);
-        if (subscribtionQueue.length > 0) {
-          processNextSubscription();
-        }
-      }
-      console.log("Process next: " + subscribtionQueue.length);
-      next().then(onNextCompleted, onNextCompleted);
-    }
-
-    pushSubscription(async () => {
+    DevicesRoute._subscribe.pushSubscription(async () => {
       await DevicesRoute.refreshData(repository, deviceManager);
     });
 
@@ -57,7 +36,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const bootDeviceFilter = function (req, res, next) {
-      pushSubscription(async () => {
+      DevicesRoute._subscribe.pushSubscription(async () => {
         const count = req.query.count;
         delete req.query.count;
         await deviceManager.boot(req.query, count).then((devices) => {
@@ -73,13 +52,14 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const subscribeDeviceFilter = function (req, res, next) {
-      pushSubscription(async () => {
+      DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
           res.json("Missing required filter");
         } else {
           console.log('Requested query: ', query);
           await deviceManager.subscribeForDevice(query).then((device) => {
+            console.log("Subscribe for device: ", device);
             res.json(device);
           }, () => {
             console.log("Fail!");
@@ -95,7 +75,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const unsubscribeDeviceFilter = function (req, res, next) {
-      pushSubscription(async () => {
+      DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query && !query.token) {
           res.json("Missing required token param");
@@ -115,7 +95,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const update = function (req, res, next) {
-      pushSubscription(async () => {
+      DevicesRoute._subscribe.pushSubscription(async () => {
         const token = req.query.token
         delete req.query.token;
         delete req.query.name;

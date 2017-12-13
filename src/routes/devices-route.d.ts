@@ -7,6 +7,7 @@ import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
  * @class DevicesRoute
  */
 export declare class DevicesRoute extends BaseRoute {
+    private static _subscribe;
     /**
      * Create the routes.
      *

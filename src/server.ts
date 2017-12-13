@@ -10,6 +10,7 @@ import methodOverride = require("method-override");
 import { IndexRoute } from "./routes/index";
 import { UsersRoute } from "./routes/users-route";
 import { DevicesRoute } from "./routes/devices-route";
+import { UtilsRoute } from "./routes/utils-route";
 import {
   IUnitOfWork,
   DeviceManager,
@@ -49,7 +50,7 @@ export class Server {
    * @constructor
    */
   constructor() {
-    const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 ? false : process.env['USE_MONOGDB_STORAGE'] || true;
+    const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
     if (!useLocalRepository) {
       this._unitOfWork = new MongoUnitOfWork();
     } else {
@@ -144,6 +145,7 @@ export class Server {
 
     IndexRoute.create(router);
     DevicesRoute.create(router, this._unitOfWork, this._deviceManager);
+    UtilsRoute.create(router);
 
     //use router middleware
     this.app.use("/api/v1/", router);
