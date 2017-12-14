@@ -41,6 +41,7 @@ Install the node packages via:
 |`--port`|Specify port to run server.|
 |`DEVICE_MANAGER_PORT`|Specify port to run server as env variable|
 |`--mongodb`|Should use mongodb storage.|
+|`--mongodb --startmongodb`|Will start and use mongodb server.|
 |`USE_MONOGDB_STORAGE`|Use env variable to specify storage|
 
 ## Using local storage 

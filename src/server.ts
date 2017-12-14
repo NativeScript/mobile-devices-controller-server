@@ -18,7 +18,6 @@ import {
   MongoUnitOfWork
 } from "mobile-devices-manager";
 
-
 /**
  * The server.
  *
@@ -49,15 +48,14 @@ export class Server {
    * @class Server
    * @constructor
    */
-  constructor() {
-    const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
-    if (!useLocalRepository) {
+  constructor(private _useLocalRepository: boolean = false) {
+    if (!this._useLocalRepository) {
       this._unitOfWork = new MongoUnitOfWork();
     } else {
       this._unitOfWork = new LocalUnitOfWork();
     }
 
-    this._deviceManager = new DeviceManager(this._unitOfWork, useLocalRepository);
+    this._deviceManager = new DeviceManager(this._unitOfWork, this._useLocalRepository);
     //create expressjs application
     this.app = express();
 

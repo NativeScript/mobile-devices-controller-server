@@ -5,6 +5,7 @@ import * as express from "express";
  * @class Server
  */
 export declare class Server {
+    private _useLocalRepository;
     private _unitOfWork;
     private _deviceManager;
     app: express.Application;
@@ -23,7 +24,7 @@ export declare class Server {
      * @class Server
      * @constructor
      */
-    constructor();
+    constructor(_useLocalRepository?: boolean);
     /**
      * Create REST API routes
      *

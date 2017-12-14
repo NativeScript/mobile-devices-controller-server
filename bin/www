@@ -7,9 +7,10 @@ const debug = require("debug")("express:server");
 const http = require("http");
 
 //create http server
+const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
 const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8700;
 const httpPort = normalizePort(portAsTerminalArg || process.env.DEVICE_MANAGER_PORT || 8000);
-const app = server.Server.bootstrap().app;
+const app = server.Server.bootstrap(useLocalRepository).app;
 app.set("port", httpPort);
 const httpServer = http.createServer(app);
 
@@ -20,6 +21,8 @@ httpServer.on("error", onError);
 
 //start listening on port
 httpServer.on("listening", onListening);
+
+httpServer.once("close", onClose);
 
 /**
  * Normalize a port into a number, string, or false.
@@ -48,6 +51,7 @@ function onError(error) {
     throw error;
   }
 
+  mongoDbProcess.kill("SIGINT");
   const bind = typeof httpPort === "string"
     ? "Pipe " + httpPort
     : "Port " + httpPort;
@@ -67,6 +71,7 @@ function onError(error) {
   }
 }
 
+let mongoDbProcess;
 /**
  * Event listener for HTTP server "listening" event.
  */
@@ -76,4 +81,19 @@ function onListening() {
     ? "pipe " + addr
     : "port " + addr.port;
   debug("Listening on " + bind);
+
+  const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
+  if (!useLocalRepository && process.argv.indexOf("--startmongodb") >= 0) {
+    console.log("Start mongodb sever");
+    try {
+      mongoDbProcess = require("child_process").spawn("mongod");
+    } catch (error) {
+      console.log("Failed to start mongodb: ", error);
+    }
+  }
+}
+
+function onClose() {
+  mongoDbProcess.kill("SIGINT");
+  console.log("mongodb process killed", mongoDbProcess);
 }
