@@ -9,7 +9,7 @@ const http = require("http");
 //create http server
 const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
 const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8700;
-const httpPort = normalizePort(portAsTerminalArg || process.env.DEVICE_MANAGER_PORT || 8000);
+const httpPort = normalizePort(portAsTerminalArg || process.env.DEVICE_CONTROLLER_SERVER_PORT || 8000);
 const app = server.Server.bootstrap(useLocalRepository).app;
 app.set("port", httpPort);
 const httpServer = http.createServer(app);
