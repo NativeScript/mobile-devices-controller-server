@@ -19,11 +19,9 @@ export class DevicesRoute extends BaseRoute {
    */
   public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
 
-    if (process.argv.indexOf("--cleandata") >= 0) {
-      DevicesRoute._subscribe.pushSubscription(async () => {
-        await DevicesRoute.refreshData(repository, deviceManager);
-      });
-    }
+    DevicesRoute._subscribe.pushSubscription(async () => {
+      await DevicesRoute.refreshData(repository, deviceManager);
+    });
 
     const getDevicesFilter = function (req, res, next) {
       repository.devices.find(req.query).then((devices) => {
@@ -163,7 +161,10 @@ export class DevicesRoute extends BaseRoute {
 
   private static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
     console.log("Refreshing data!!!")
-    await deviceManager.killDevices();
+
+    if (process.argv.indexOf("--cleandata") >= 0) {
+      await deviceManager.killDevices();
+    }
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
