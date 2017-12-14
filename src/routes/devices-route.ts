@@ -19,9 +19,11 @@ export class DevicesRoute extends BaseRoute {
    */
   public static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager) {
 
-    DevicesRoute._subscribe.pushSubscription(async () => {
-      await DevicesRoute.refreshData(repository, deviceManager);
-    });
+    if (process.argv.indexOf("--cleandata") >= 0) {
+      DevicesRoute._subscribe.pushSubscription(async () => {
+        await DevicesRoute.refreshData(repository, deviceManager);
+      });
+    }
 
     const getDevicesFilter = function (req, res, next) {
       repository.devices.find(req.query).then((devices) => {
