@@ -6,27 +6,10 @@ const server = require("../src/server");
 const debug = require("debug")("express:server");
 const http = require("http");
 
-//create http server
-const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
+const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] || process.argv.indexOf("--startmongodb") >= 0 ? false : true;
 const portAsTerminalArg = process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 8700;
 const httpPort = normalizePort(portAsTerminalArg || process.env.DEVICE_CONTROLLER_SERVER_PORT || 8000);
-const app = server.Server.bootstrap(useLocalRepository).app;
-app.set("port", httpPort);
-const httpServer = http.createServer(app);
 
-//listen on provided ports
-httpServer.listen(httpPort);
-//add error handler
-httpServer.on("error", onError);
-
-//start listening on port
-httpServer.on("listening", onListening);
-
-httpServer.once("close", onClose);
-
-/**
- * Normalize a port into a number, string, or false.
- */
 function normalizePort(val) {
   const port = parseInt(val, 10);
 
@@ -43,57 +26,79 @@ function normalizePort(val) {
   return false;
 }
 
-/**
- * Event listener for HTTP server "error" event.
- */
-function onError(error) {
-  if (error.syscall !== "listen") {
-    throw error;
-  }
+const start = async () => {
+  return new Promise((resolve, reject) => {
+    let mongoDbProcess;
 
-  mongoDbProcess.kill("SIGINT");
-  const bind = typeof httpPort === "string"
-    ? "Pipe " + httpPort
-    : "Port " + httpPort;
+    if (process.argv.indexOf("--startmongodb") >= 0) {
+      console.log("Start mongodb sever");
+      try {
+        mongoDbProcess = require("child_process").spawn("mongod");
+        mongoDbProcess.stdout.once("data", () => {
+          console.log("Mongodb sever started!!!");
+          const app = server.Server.bootstrap(useLocalRepository).app;
+          app.set("port", httpPort);
+          const httpServer = http.createServer(app);
 
-  // handle specific listen errors with friendly messages
-  switch (error.code) {
-    case "EACCES":
-      console.error(bind + " requires elevated privileges");
-      process.exit(1);
-      break;
-    case "EADDRINUSE":
-      console.error(bind + " is already in use");
-      process.exit(1);
-      break;
-    default:
-      throw error;
-  }
-}
+          httpServer.listen(httpPort);
+          httpServer.on("error", onError);
+          httpServer.on("listening", onListening);
+          httpServer.once("close", onClose);
 
-let mongoDbProcess;
-/**
- * Event listener for HTTP server "listening" event.
- */
-function onListening() {
-  const addr = httpServer.address();
-  const bind = typeof addr === "string"
-    ? "pipe " + addr
-    : "port " + addr.port;
-  debug("Listening on " + bind);
+          function onError(error) {
+            mongoDbProcess.kill("SIGINT");
 
-  const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] ? false : true;
-  if (!useLocalRepository && process.argv.indexOf("--startmongodb") >= 0) {
-    console.log("Start mongodb sever");
-    try {
-      mongoDbProcess = require("child_process").spawn("mongod");
-    } catch (error) {
-      console.log("Failed to start mongodb: ", error);
+            if (error.syscall !== "listen") {
+              reject();
+              throw error;
+            }
+
+            const bind = typeof httpPort === "string"
+              ? "Pipe " + httpPort
+              : "Port " + httpPort;
+
+            // handle specific listen errors with friendly messages
+            switch (error.code) {
+              case "EACCES":
+                console.error(bind + " requires elevated privileges");
+                process.exit(1);
+                break;
+              case "EADDRINUSE":
+                console.error(bind + " is already in use");
+                process.exit(1);
+                break;
+              default:
+                throw error;
+            }
+          }
+
+          function onListening() {
+            const addr = httpServer.address();
+            const bind = typeof addr === "string"
+              ? "pipe " + addr
+              : "port " + addr.port;
+            debug("Listening on " + bind);
+            resolve(true);
+          }
+
+          function onClose() {
+            mongoDbProcess.kill("SIGINT");
+            console.log("Mongodb process killed", mongoDbProcess);
+            resolve();
+          }
+        });
+      } catch (error) {
+        console.log("Failed to start mongodb: ", error);
+        reject();
+      }
+    } else if (!useLocalRepository) {
+      console.log("Skip starting of mongodb!!!");
+      resolve(true);
+    } else {
+      console.log("Local rep[ository will be used!!!");
+      resolve(true);
     }
-  }
+  });
 }
 
-function onClose() {
-  mongoDbProcess.kill("SIGINT");
-  console.log("mongodb process killed", mongoDbProcess);
-}
+start();
