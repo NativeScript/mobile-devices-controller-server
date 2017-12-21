@@ -12,17 +12,12 @@ const httpPort = normalizePort((process.argv.includes("--port") ? process.argv[p
 function normalizePort(val) {
   const port = parseInt(val, 10);
 
-  if (isNaN(port)) {
+  if (port <= 0 || isNaN(port)) {
     // named pipe
     return val;
   }
 
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
-  return false;
+  return port;
 }
 
 const start = async () => {
