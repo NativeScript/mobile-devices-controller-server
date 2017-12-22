@@ -5,7 +5,6 @@
         "experimentalDecorators": true,
         "emitDecoratorMetadata": true,
         "noEmitHelpers": false,
-        "importHelpers": false,
         "noEmitOnError": false,
         "declaration": true,
         "sourceMap": true,
