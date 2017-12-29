@@ -43,6 +43,7 @@ Install the node packages via:
 |`--mongodb`|Should use mongodb storage.|
 |`--mongodb --startmongodb`|Will start and use mongodb server.|
 |`USE_MONOGDB_STORAGE`|Use env variable to specify storage|
+|`MONOGDB_STORAGE`|Path to storage|
 
 ## Using local storage 
     By default uses local storage to store device info using files. 
@@ -65,3 +66,16 @@ Install the node packages via:
 #### Run mongodb
 
 `mogod`
+
+### Installing dependencies for mobile-devices-controller
+`brew uninstall telnet && true`
+`brew install telnet && true`
+`brew uninstall ios-webkit-debug-proxy && true`
+`brew uninstall ideviceinstaller && true`
+`brew uninstall libimobiledevice && true`
+`brew install --HEAD libimobiledevice`
+`brew link --overwrite libimobiledevice && true`
+`brew install --HEAD ideviceinstaller`
+`brew link --overwrite ideviceinstaller && true`
+`brew install ios-webkit-debug-proxy`
+`brew uninstall carthage && true; brew install carthage `

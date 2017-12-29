@@ -29,12 +29,13 @@ const start = async () => {
     if (process.argv.indexOf("--startmongodb") >= 0) {
       console.log("Start mongodb sever");
       try {
-        mongoDbProcess = require("child_process").spawn("mongod");
+        const args = process.env['MONOGDB_STORAGE'] ? ["--dbpath", process.env['MONOGDB_STORAGE']] : [];
+        mongoDbProcess = require("child_process").spawn("mongod", args);
         mongoDbProcess.stdout.once("data", () => {
           console.log("Mongodb sever started!!!");
           const app = server.Server.bootstrap(useLocalRepository).app;
           app.set("port", httpPort);
-          console.log("Port: " ,httpPort);
+          console.log("Port: ", httpPort);
           httpServer = http.createServer(app);
           httpServer.listen(httpPort);
           httpServer.on("error", onError);

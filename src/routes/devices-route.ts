@@ -61,8 +61,8 @@ export class DevicesRoute extends BaseRoute {
           await deviceManager.subscribeForDevice(query).then((device) => {
             console.log("Subscribe for device: ", device);
             res.json(device);
-          }, () => {
-            console.log("Fail!");
+          }, (error) => {
+            console.log("Fail!", error);
             res.json("Device failed to boot!");
           });
         }
@@ -170,6 +170,8 @@ export class DevicesRoute extends BaseRoute {
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
       deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
-    console.log("Data refreshed!!!")
+
+    const result = deviceManager.refreshData({}, {});
+    console.log("Data refreshed!!!", result);
   }
 }
