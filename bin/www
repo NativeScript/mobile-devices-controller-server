@@ -25,11 +25,13 @@ let httpServer;
 
 const start = async () => {
   return new Promise((resolve, reject) => {
-
     if (process.argv.indexOf("--startmongodb") >= 0) {
       console.log("Start mongodb sever");
       try {
+
         const args = process.env['MONGODB_STORAGE'] ? ["--dbpath", process.env['MONGODB_STORAGE']] : [];
+        console.log("Mongodb args: ", args);
+
         mongoDbProcess = require("child_process").spawn("mongod", args);
         mongoDbProcess.stdout.once("data", () => {
           console.log("Mongodb sever started!!!");
