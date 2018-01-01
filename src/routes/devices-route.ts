@@ -171,7 +171,7 @@ export class DevicesRoute extends BaseRoute {
       deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
 
-    const result = deviceManager.refreshData({}, {});
+    const result = await deviceManager.refreshData({}, {});
     console.log("Data refreshed!!!", result);
   }
 }
