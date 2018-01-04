@@ -131,6 +131,12 @@ export class DevicesRoute extends BaseRoute {
         res.send(devices);
       });
     });
+
+    router.get("/devices/dropdb", (req: Request, res: Response, next: NextFunction) => {
+      deviceManager.dropdb().then((devices) => {
+        res.send(devices);
+      });
+    });
   }
 
   constructor() {
