@@ -80,7 +80,21 @@ const start = async () => {
         mongoDbProcess.stdout.once("data", async () => {
           console.log("Mongodb sever started!!!");
 
-          const app = await server.Server.bootstrap(useLocalRepository).app;
+          mongoDbProcess.stdout.on("data", data => {
+            console.log("MONGODB DATA: ", data.toString());
+          });
+
+          mongoDbProcess.on("disconnect", code => console.log(`Mongodb has been disconnect with code ${code}`));
+          mongoDbProcess.on("exit", code => console.log(`Mongodb has exited with code ${code}`));
+          mongoDbProcess.on("SIGTERM", code => console.log(`Mongodb recieved SIGTERM with code ${code}`));
+          mongoDbProcess.on("uncaughtException", code => {
+            mongoDbProcess.kill("SIGTERM");
+            console.error(`MONGODB has exited with uncaughtException ${code}!`);
+            console.info(`Will try to reconnect`);
+            mongoDbProcess = require("child_process").spawnSync("mongod", args);
+          });
+
+          const app = (await server.Server.bootstrap(useLocalRepository)).app;
           app.set("port", httpPort);
           console.log("Port: ", httpPort);
           httpServer = http.createServer(app);
@@ -89,6 +103,7 @@ const start = async () => {
           httpServer.on("listening", onListening);
           httpServer.once("close", onClose);
         });
+
       } catch (error) {
         console.log("Failed to start mongodb: ", error);
         reject();
@@ -99,7 +114,7 @@ const start = async () => {
       } else {
         console.log("Using local repository!");
       }
-      const app = await server.Server.bootstrap(useLocalRepository).app;
+      const app = (await server.Server.bootstrap(useLocalRepository)).app;
       app.set("port", httpPort);
       console.log("Port: ", httpPort);
 

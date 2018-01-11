@@ -38,8 +38,11 @@ export class Server {
    * @static
    * @return {ng.auto.IInjectorService} Returns the newly created injector for this app.
    */
-  public static bootstrap(): Server {
-    return new Server();
+  public static async  bootstrap(): Promise<Server> {
+    const _server =  new Server();
+    await _server.startServer();
+
+    return _server;
   }
 
   /**
@@ -49,8 +52,11 @@ export class Server {
    * @constructor
    */
   constructor(private _useLocalRepository: boolean = false) {
+  }
+
+  async startServer(){
     if (!this._useLocalRepository) {
-      this._unitOfWork = new MongoUnitOfWork();
+      this._unitOfWork = await MongoUnitOfWork.createConnection();
     } else {
       this._unitOfWork = new LocalUnitOfWork();
     }

@@ -17,7 +17,7 @@ export declare class Server {
      * @static
      * @return {ng.auto.IInjectorService} Returns the newly created injector for this app.
      */
-    static bootstrap(): Server;
+    static bootstrap(): Promise<Server>;
     /**
      * Constructor.
      *
@@ -25,6 +25,7 @@ export declare class Server {
      * @constructor
      */
     constructor(_useLocalRepository?: boolean);
+    startServer(): Promise<void>;
     /**
      * Create REST API routes
      *
