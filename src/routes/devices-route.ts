@@ -24,6 +24,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const getDevicesFilter = function (req, res, next) {
+      req.setTimeout(0);
       repository.devices.find(req.query).then((devices) => {
         res.json(devices);
       }).catch((error) => {
@@ -36,13 +37,14 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const bootDeviceFilter = function (req, res, next) {
+      req.setTimeout(0);      
       DevicesRoute._subscribe.pushSubscription(async () => {
         const count = req.query.count;
         delete req.query.count;
         await deviceManager.boot(req.query, count).then((devices) => {
           res.json(devices);
         }, (err) => {
-          res.json(`Failed to boot device ${err}`);
+          res.json(`Failed to boot device ${err.message}`);
         });
       });
     };
@@ -52,6 +54,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const subscribeDeviceFilter = function (req, res, next) {
+      req.setTimeout(0);      
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
@@ -63,7 +66,7 @@ export class DevicesRoute extends BaseRoute {
             res.json(device);
           }, (error) => {
             console.log("Fail!", error);
-            res.json("Device failed to boot!");
+            res.json("Device failed to boot! " + error.message) ;
           });
         }
       });
@@ -75,6 +78,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const unsubscribeDeviceFilter = function (req, res, next) {
+      req.setTimeout(0);      
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query && !query.token) {
