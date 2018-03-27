@@ -3,7 +3,7 @@
     This is very convinience when a multiple builds are triggered.
 
     Provides api as:
-        http://localhost:8000/api/v1/devices/
+        /api/v1/devices/
             - `subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios`
             - `unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5`
             - `?query`- returns devices.

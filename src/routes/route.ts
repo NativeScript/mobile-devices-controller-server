@@ -1,25 +1,12 @@
 import { NextFunction, Request, Response } from "express";
 
-/**
- * Constructor
- *
- * @class BaseRoute
- */
 export class BaseRoute {
 
   protected title: string;
 
   private scripts: string[];
 
-
-  /**
-   * Constructor
-   *
-   * @class BaseRoute
-   * @constructor
-   */
   constructor() {
-    //initialize variables
     this.title = "Manage all simulator, emulators and real devices.";
     this.scripts = [];
   }

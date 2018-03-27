@@ -8,7 +8,6 @@ import methodOverride = require("method-override");
 
 //routes
 import { IndexRoute } from "./routes/index";
-import { UsersRoute } from "./routes/users-route";
 import { DevicesRoute } from "./routes/devices-route";
 import { UtilsRoute } from "./routes/utils-route";
 import {
@@ -115,7 +114,7 @@ export class Server {
     }));
 
     //mount cookie parker
-    //this.app.use(cookieParser("SECRET_GOES_HERE"));
+    //this.app.use(cookieParser(""));
 
     //mount override
     this.app.use(methodOverride());

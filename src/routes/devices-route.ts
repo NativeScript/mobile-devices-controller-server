@@ -3,11 +3,6 @@ import { BaseRoute } from "./route";
 import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
 import { Subscribe } from "../utils/subscription";
 
-/**
- * / route
- *
- * @class DevicesRoute
- */
 export class DevicesRoute extends BaseRoute {
   private static _subscribe: Subscribe = new Subscribe();
   /**
@@ -37,7 +32,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const bootDeviceFilter = function (req, res, next) {
-      req.setTimeout(0);      
+      req.setTimeout(0);  
       DevicesRoute._subscribe.pushSubscription(async () => {
         const count = req.query.count;
         delete req.query.count;
@@ -72,7 +67,7 @@ export class DevicesRoute extends BaseRoute {
       });
     };
 
-    // http://localhost:8000/api/v1/devices/subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios
+    // /api/v1/devices/subscribe?type=simulator&name=iPhone%207%20100&info=Test&apiLevel=11.0&platform=ios
     router.get("/devices/subscribe", subscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       res.json("Filed to subscribe!");
     });
@@ -92,7 +87,7 @@ export class DevicesRoute extends BaseRoute {
       });
     };
 
-    // http://localhost:8000/api/devices/unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5
+    // /api/v1/devices/unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5
     router.get("/devices/unsubscribe", unsubscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
       console.log("Fail!");
       res.json("Device failed to boot!");
@@ -113,7 +108,7 @@ export class DevicesRoute extends BaseRoute {
       });
     }
 
-    // //http://localhost:3000/devices/update?token=token&status=shutdown
+    // /api/v1/devices/update?token=token&status=shutdown
     router.get("/devices/udpate", update, (req: Request, res: Response, next: NextFunction) => {
       res.json("Data failed to update!");
     });
@@ -128,8 +123,8 @@ export class DevicesRoute extends BaseRoute {
       res.json("Data failed to refresh!");
     });
 
-    // api/devices/kill?platform=android
-    // api/devices/kill?name=Emulator-Api21-Default
+    // api/v1/devices/kill?platform=android
+    // api/v1/devices/kill?name=Emulator-Api21-Default
     router.get("/devices/kill", (req: Request, res: Response, next: NextFunction) => {
       deviceManager.killDevices(req.query).then((devices) => {
         res.send(devices);
@@ -147,15 +142,7 @@ export class DevicesRoute extends BaseRoute {
     super();
   }
 
-  /**
-   * The home page route.
-   *
-   * @class DeviceRoute
-   * @method index
-   * @param req {Request} The express Request object.
-   * @param res {Response} The express Response object.
-   * @next {NextFunction} Execute the next method.
-   */
+
   public get(req: Request, res: Response, next: NextFunction) {
     //set custom title
     this.title = "Devices | Device manager server!";

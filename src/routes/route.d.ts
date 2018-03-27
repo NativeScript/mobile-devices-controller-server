@@ -1,18 +1,7 @@
 import { Request, Response } from "express";
-/**
- * Constructor
- *
- * @class BaseRoute
- */
 export declare class BaseRoute {
     protected title: string;
     private scripts;
-    /**
-     * Constructor
-     *
-     * @class BaseRoute
-     * @constructor
-     */
     constructor();
     /**
      * Add a JS external file to the request.
