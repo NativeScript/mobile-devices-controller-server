@@ -2,6 +2,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
 import { Subscribe } from "../utils/subscription";
+import { log } from "../utils/utils";
 
 export class DevicesRoute extends BaseRoute {
   private static _subscribe: Subscribe = new Subscribe();
@@ -55,12 +56,12 @@ export class DevicesRoute extends BaseRoute {
         if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
           res.json("Missing required filter");
         } else {
-          console.log('Requested query: ', query);
+          log('Requested query: ', query);
           await deviceManager.subscribeForDevice(query).then((device) => {
-            console.log("Subscribe for device: ", device);
+            log("Subscribe for device: ", device);
             res.json(device);
           }, (error) => {
-            console.log("Fail!", error);
+            log("Fail!", error);
             res.json("Device failed to boot! " + error.message) ;
           });
         }
@@ -79,7 +80,7 @@ export class DevicesRoute extends BaseRoute {
         if (!query && !query.token) {
           res.json("Missing required token param");
         }
-        await deviceManager.unsubscribeFromDevice(query).then((device) => {
+        await deviceManager.unsubscribeFromDevice(query, query.maxDeviceUsage).then((device) => {
           res.json(device);
         }, () => {
           res.json("Filed to unsubscribe!");
@@ -89,7 +90,7 @@ export class DevicesRoute extends BaseRoute {
 
     // /api/v1/devices/unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5
     router.get("/devices/unsubscribe", unsubscribeDeviceFilter, (req: Request, res: Response, next: NextFunction) => {
-      console.log("Fail!");
+      log("Fail!");
       res.json("Device failed to boot!");
     });
 
@@ -157,7 +158,7 @@ export class DevicesRoute extends BaseRoute {
   }
 
   private static async refreshData(repository: IUnitOfWork, deviceManager: DeviceManager) {
-    console.log("Refreshing data!!!")
+    log("Refreshing data!!!")
 
     if (process.argv.indexOf("--cleandata") >= 0) {
       await deviceManager.killDevices();
@@ -169,6 +170,6 @@ export class DevicesRoute extends BaseRoute {
     }
 
     const result = await deviceManager.refreshData({}, {});
-    console.log("Data refreshed!!!", result);
+    log("Data refreshed!!!", result);
   }
 }
