@@ -33,7 +33,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const bootDeviceFilter = function (req, res, next) {
-      req.setTimeout(0);  
+      req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const count = req.query.count;
         delete req.query.count;
@@ -50,7 +50,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const subscribeDeviceFilter = function (req, res, next) {
-      req.setTimeout(0);      
+      req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
@@ -62,7 +62,7 @@ export class DevicesRoute extends BaseRoute {
             res.json(device);
           }, (error) => {
             log("Fail!", error);
-            res.json("Device failed to boot! " + error.message) ;
+            res.json("Device failed to boot! " + error.message);
           });
         }
       });
@@ -74,13 +74,14 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const unsubscribeDeviceFilter = function (req, res, next) {
-      req.setTimeout(0);      
+      req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query && !query.token) {
           res.json("Missing required token param");
         }
         await deviceManager.unsubscribeFromDevice(query, query.maxDeviceUsage).then((device) => {
+          log("Unsubscribe from device: ", device);
           res.json(device);
         }, () => {
           res.json("Filed to unsubscribe!");
