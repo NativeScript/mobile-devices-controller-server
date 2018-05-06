@@ -36,8 +36,10 @@ export class DevicesRoute extends BaseRoute {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const count = req.query.count;
+        log(`Boot device`, req.query);
         delete req.query.count;
         await deviceManager.boot(req.query, count).then((devices) => {
+          log(`Booted devices`, devices);
           res.json(devices);
         }, (err) => {
           res.json(`Failed to boot device ${err.message}`);
@@ -53,7 +55,7 @@ export class DevicesRoute extends BaseRoute {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
-        if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel || !(query.name || query.token)) {
+        if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel) {
           res.json("Missing required filter");
         } else {
           log('Requested query: ', query);
@@ -167,7 +169,7 @@ export class DevicesRoute extends BaseRoute {
 
     const deviceMaxUsageTime = process.env.MAX_USAGE_INTERVAL;
     if (deviceMaxUsageTime && parseInt(deviceMaxUsageTime) !== NaN) {
-      deviceManager.checkDeviceStatus(deviceMaxUsageTime);
+      //deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
 
     const result = await deviceManager.refreshData({}, {});
