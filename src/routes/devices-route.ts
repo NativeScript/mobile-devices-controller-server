@@ -83,7 +83,7 @@ export class DevicesRoute extends BaseRoute {
           res.json("Missing required token param");
         }
         await deviceManager.unsubscribeFromDevice(query, query.maxDeviceUsage).then((device) => {
-          log("Unsubscribe from device: ", device);
+          log("Unsubscribed from device: ", device);
           res.json(device);
         }, () => {
           res.json("Filed to unsubscribe!");
