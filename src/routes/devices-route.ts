@@ -21,10 +21,12 @@ export class DevicesRoute extends BaseRoute {
 
     const getDevicesFilter = function (req, res, next) {
       req.setTimeout(0);
-      repository.devices.find(req.query).then((devices) => {
-        res.json(devices);
-      }).catch((error) => {
-        res.json(error);
+      DevicesRoute._subscribe.pushSubscription(async () => {
+        repository.devices.find(req.query).then((devices) => {
+          res.json(devices);
+        }).catch((error) => {
+          res.json(error);
+        });
       });
     };
 
