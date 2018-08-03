@@ -2,7 +2,7 @@ import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
 import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
 import { Subscribe } from "../utils/subscription";
-import { log } from "../utils/utils";
+import { log, logErr } from "../utils/utils";
 
 export class DevicesRoute extends BaseRoute {
   private static _subscribe: Subscribe = new Subscribe();
@@ -65,7 +65,7 @@ export class DevicesRoute extends BaseRoute {
             log("Subscribe for device: ", device);
             res.json(device);
           }, (error) => {
-            log("Fail!", error);
+            logErr("Fail!", error);
             res.json("Device failed to boot! " + error.message);
           });
         }
