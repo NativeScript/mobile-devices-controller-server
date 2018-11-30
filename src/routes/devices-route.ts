@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
+import { DeviceManager } from "../mobile-devices-manager/device-manager";
+import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { Subscribe } from "../utils/subscription";
 import { log, logErr } from "../utils/utils";
 
@@ -57,7 +58,7 @@ export class DevicesRoute extends BaseRoute {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
-        if (!query || !(query.platform || query.type) || !query.info || !query.apiLevel) {
+        if (!query || (!query.platform && !query.type && !query.name)) {
           res.json("Missing required filter");
         } else {
           log('Requested query: ', query);
