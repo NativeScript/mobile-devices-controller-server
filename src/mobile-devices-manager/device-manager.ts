@@ -42,9 +42,20 @@ export class DeviceManager {
             this.addVirtualDevice(virtualDeviceController);
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
-                await this.killDevice(device);
+                await this.markAsShutdown(device);
                 this.removeVirtualDevice(device.token);
             });
+
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (device: IDevice) => {
+                // await this.markAsShutdown(device);
+                // this.removeVirtualDevice(device.token);
+            });
+
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
+                // await this.markAsShutdown(device);
+                // this.removeVirtualDevice(device.token);
+            });
+
             if (shouldUpdate) {
                 const result = await this._unitOfWork.devices.update(device.token, device);
             }
@@ -326,6 +337,10 @@ export class DeviceManager {
         } else {
             await DeviceController.kill(device);
         }
+        await this.markAsShutdown(device);
+    }
+
+    private async markAsShutdown(device: IDevice) {
         const updateQuery: any = {};
         updateQuery['status'] = Status.SHUTDOWN;
         updateQuery['startedAt'] = -1;

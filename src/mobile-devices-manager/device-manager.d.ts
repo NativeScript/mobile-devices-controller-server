@@ -17,6 +17,7 @@ export declare class DeviceManager {
     private killOverUsedBusyDevices;
     private resetDevicesCountToMaxLimitedCount;
     private killDevice;
+    private markAsShutdown;
     private mark;
     private unmark;
     private createModel;
