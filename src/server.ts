@@ -3,19 +3,18 @@ import * as cookieParser from "cookie-parser";
 import * as express from "express";
 import * as logger from "morgan";
 import * as path from "path";
-import errorHandler = require("errorhandler"); 
+import errorHandler = require("errorhandler");
 import methodOverride = require("method-override");
 
 //routes
 import { IndexRoute } from "./routes/index";
 import { DevicesRoute } from "./routes/devices-route";
 import { UtilsRoute } from "./routes/utils-route";
-import {
-  IUnitOfWork,
-  DeviceManager,
-  LocalUnitOfWork,
-  MongoUnitOfWork
-} from "mobile-devices-manager";
+
+import { DeviceManager } from "./mobile-devices-manager/device-manager";
+
+import { IUnitOfWork } from "./db/interfaces/unit-of-work";
+import { MongoUnitOfWork } from "./db/mongo/mongodb-unit-of-work";
 
 /**
  * The server.
@@ -38,7 +37,7 @@ export class Server {
    * @return {ng.auto.IInjectorService} Returns the newly created injector for this app.
    */
   public static async  bootstrap(): Promise<Server> {
-    const _server =  new Server();
+    const _server = new Server();
     await _server.startServer();
 
     return _server;
@@ -50,19 +49,14 @@ export class Server {
    * @class Server
    * @constructor
    */
-  constructor(private _useLocalRepository: boolean = false) {
-  }
+  constructor() { }
 
-  async startServer(){
-    if (!this._useLocalRepository) {
-      this._unitOfWork = await MongoUnitOfWork.createConnection();
-    } else {
-      this._unitOfWork = new LocalUnitOfWork();
-    }
+  async startServer() {
+    this._unitOfWork = await MongoUnitOfWork.createConnection();
 
-    this._deviceManager = new DeviceManager(this._unitOfWork, this._useLocalRepository);
+    this._deviceManager = new DeviceManager(this._unitOfWork);
 
-    //create expressjs application
+    //create expressJs application
     this.app = express();
 
     //configure application

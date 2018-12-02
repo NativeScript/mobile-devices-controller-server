@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { BaseRoute } from "./route";
-import { DeviceManager, IUnitOfWork } from "mobile-devices-manager";
+import { DeviceManager } from "../mobile-devices-manager/device-manager";
+import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 export declare class DevicesRoute extends BaseRoute {
     private static _subscribe;
     /**
@@ -13,5 +14,5 @@ export declare class DevicesRoute extends BaseRoute {
     static create(router: Router, repository: IUnitOfWork, deviceManager: DeviceManager): void;
     constructor();
     get(req: Request, res: Response, next: NextFunction): void;
-    private static refreshData(repository, deviceManager);
+    private static refreshData;
 }
