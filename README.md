@@ -74,6 +74,7 @@ Install the node packages via:
 
 # To setup nativescript.mobile.devices.controller.server.plist on mac
 ```
+$ sudo chown 777 ./resources/start-mobile-devices-controller-server.sh
 $ cp resources/nativescript.mobile.devices.controller.server.plist ~/Library/LaunchAgents
 $ cd ~/Library/LaunchAgents
 
@@ -94,25 +95,25 @@ $ launchctl start nativescript.mobile.devices.controller.server.plist
 '<key>Disabled</key> <true/>'
 '<key>Enable</key> <false/>'
 
-# To setup nativescript.shares.service on linux
+# To setup nativescript.mobile.devices.controller.server.service on linux
 ```
 
 https://gododblog.wordpress.com/2017/01/26/boot-start-script-by-systemd/
 
-$ sudo cp src/utils/nativescript.shares.service /usr/lib/systemd/user/
-$ sudo chmod 664 /etc/systemd/system/nativescript.shares.service
+$ sudo cp resources/nativescript.mobile.devices.controller.server.service /usr/lib/systemd/user/
+$ sudo chmod 664 /etc/systemd/system/nativescript.mobile.devices.controller.server.service
 $ sudo chmod 755 /home/nsbuilduser/git/ns-setup/infrastructure/
 $ systemctl --user daemon-reload
-$ systemctl --user enable nativescript.shares.service
-$ systemctl --user start nativescript.shares.service
+$ systemctl --user enable nativescript.mobile.devices.controller.server.service
+$ systemctl --user start nativescript.mobile.devices.controller.server.service
 
 RESULT:
 
-● nativescript.shares.service
-   Loaded: loaded (/usr/lib/systemd/user/nativescript.shares.service; enabled; vendor preset: enabled)
+● nativescript.mobile.devices.controller.server.service
+   Loaded: loaded (/usr/lib/systemd/user/nativescript.mobile.devices.controller.server.service; enabled; vendor preset: enabled)
    Active: active (running) since Thu 2018-09-20 15:57:33 EEST; 1s ago
  Main PID: 3288 (sh)
-   CGroup: /user.slice/user-1001.slice/user@1001.service/nativescript.shares.service
+   CGroup: /user.slice/user-1001.slice/user@1001.service/nativescript.mobile.devices.controller.server.service
            ├─3288 /bin/sh /home/nsbuilduser/git/ns-setup/infrastructure/start-shares-server-ubuntu.sh &
            └─3289 node /home/nsbuilduser/.nvm/versions/node/v8.11.1/bin/shares-server --port 8800
 
