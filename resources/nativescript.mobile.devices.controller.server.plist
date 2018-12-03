@@ -17,9 +17,9 @@
 		<key>WorkingDirectory</key>
 		<string>/</string>
 		<key>StandardOutPath</key>
-		<string>/Users/tsenov/logs/mobile-devices-controller-server-output.txt</string>
+		<string>/Users/nsbuilduser/logs/mobile-devices-controller-server-output.txt</string>
 		<key>StandardErrorPath</key>
-		<string>/Users/tsenov/logs/mobile-devices-controller-errors.txt</string>
+		<string>/Users/nsbuilduser/logs/mobile-devices-controller-errors.txt</string>
 		<key>HardResourceLimits</key>
 		<dict>
 			<key>NumberOfFiles</key>

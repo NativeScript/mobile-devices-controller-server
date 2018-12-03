@@ -78,7 +78,7 @@ $ cp resources/nativescript.mobile.devices.controller.server.plist ~/Library/Lau
 $ cd ~/Library/LaunchAgents
 
 # This plist profile is setup for node8. In order to change node, open file and edit it
-$ sudo lchown nsbuilduser: nativescript.mobile.devices.controller.server.plist
+$ sudo chown nsbuilduser: nativescript.mobile.devices.controller.server.plist
 $ launchctl load nativescript.mobile.devices.controller.server.plist
 $ launchctl start nativescript.mobile.devices.controller.server.plist
 ```
