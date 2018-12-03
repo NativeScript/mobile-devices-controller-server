@@ -1,0 +1,8 @@
+[Unit]
+After=network.target
+
+[Service]
+ExecStart=/bin/sh /home/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.sh &
+
+[Install]
+WantedBy=default.target

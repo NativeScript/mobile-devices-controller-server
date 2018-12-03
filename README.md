@@ -42,17 +42,7 @@ Install the node packages via:
 |`DEVICE_CONTROLLER_SERVER_PORT`|Specify port to run server as env variable|
 |`--mongodb`|Should use mongodb storage.|
 |`--mongodb --startmongodb`|Will start and use mongodb server.|
-|`USE_MONOGDB_STORAGE`|Use env variable to specify storage|
-|`MONOGDB_STORAGE`|Path to storage|
 
-## Using local storage 
-    By default uses local storage to store device info using files. 
-    Default folder location is in home folder of the user.
-    To override it, set env variable `DEVICE_INFO_STORAGE`=path to storage.
-
-## Using mongodb storage
-
-    Set evn variable `USE_MONOGDB_STORAGE`=true or --mongodb
 
 ### Install mogodb
 
@@ -79,3 +69,57 @@ Install the node packages via:
 `brew link --overwrite ideviceinstaller && true`
 `brew install ios-webkit-debug-proxy`
 `brew uninstall carthage && true; brew install carthage `
+
+### Start server as a service
+
+# To setup nativescript.mobile.devices.controller.server.plist on mac
+```
+$ cp resources/nativescript.mobile.devices.controller.server.plist ~/Library/LaunchAgents
+$ cd ~/Library/LaunchAgents
+
+# This plist profile is setup for node8. In order to change node, open file and edit it
+$ sudo lchown nsbuilduser: nativescript.mobile.devices.controller.server.plist
+$ launchctl load nativescript.mobile.devices.controller.server.plist
+$ launchctl start nativescript.mobile.devices.controller.server.plist
+```
+
+###  Restart service
+$ sudo chown nsbuilduser: nativescript.mobile.devices.controller.server.plist
+$ launchctl unload nativescript.mobile.devices.controller.server.plist
+$ launchctl load nativescript.mobile.devices.controller.server.plist
+$ launchctl start nativescript.mobile.devices.controller.server.plist
+```
+
+### To disable/enable. sudo vim nativescript.mobile.devices.controller.server.plist and edit
+'<key>Disabled</key> <true/>'
+'<key>Enable</key> <false/>'
+
+# To setup nativescript.shares.service on linux
+```
+
+https://gododblog.wordpress.com/2017/01/26/boot-start-script-by-systemd/
+
+$ sudo cp src/utils/nativescript.shares.service /usr/lib/systemd/user/
+$ sudo chmod 664 /etc/systemd/system/nativescript.shares.service
+$ sudo chmod 755 /home/nsbuilduser/git/ns-setup/infrastructure/
+$ systemctl --user daemon-reload
+$ systemctl --user enable nativescript.shares.service
+$ systemctl --user start nativescript.shares.service
+
+RESULT:
+
+● nativescript.shares.service
+   Loaded: loaded (/usr/lib/systemd/user/nativescript.shares.service; enabled; vendor preset: enabled)
+   Active: active (running) since Thu 2018-09-20 15:57:33 EEST; 1s ago
+ Main PID: 3288 (sh)
+   CGroup: /user.slice/user-1001.slice/user@1001.service/nativescript.shares.service
+           ├─3288 /bin/sh /home/nsbuilduser/git/ns-setup/infrastructure/start-shares-server-ubuntu.sh &
+           └─3289 node /home/nsbuilduser/.nvm/versions/node/v8.11.1/bin/shares-server --port 8800
+
+```
+
+# test:
+```
+$ curl localhost:8700/api/v1/devices
+```
+
