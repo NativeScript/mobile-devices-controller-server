@@ -92,7 +92,7 @@ const start = async () => {
             mongoDbProcess = require("child_process").spawnSync("mongod", args);
           });
 
-          const app = (await server.Server.bootstrap(useLocalRepository)).app;
+          const app = (await server.Server.bootstrap()).app;
           app.set("port", httpPort);
           console.log("Port: ", httpPort);
           httpServer = http.createServer(app);
@@ -107,11 +107,6 @@ const start = async () => {
         reject();
       }
     } else {
-      if (!useLocalRepository) {
-        console.log("Skip starting of mongodb!!!");
-      } else {
-        console.log("Using local repository!");
-      }
       const app = (await server.Server.bootstrap()).app;
       app.set("port", httpPort);
       console.log("Port: ", httpPort);

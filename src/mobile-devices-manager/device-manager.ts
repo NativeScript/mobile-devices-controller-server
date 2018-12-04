@@ -30,11 +30,12 @@ export class DeviceManager {
         for (var index = 0; index < simulators.length; index++) {
             let device: IDevice = simulators[index];
             let virtualDeviceController;
-            device = await virtualDeviceController.attachToDevice(device);
             if (this._usedVirtualDevices.has(device.token)) {
                 virtualDeviceController = this._usedVirtualDevices.get(device.token);
+                device = await virtualDeviceController.attachToDevice(device);
             } else {
                 virtualDeviceController = new VirtualDeviceController(device.platform);
+                device = await virtualDeviceController.attachToDevice(device);
                 this.addVirtualDevice(virtualDeviceController);    
                 
                 virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {

@@ -5,14 +5,14 @@ export declare class DeviceManager {
     private _usedDevices;
     private _usedVirtualDevices;
     constructor(_unitOfWork: IUnitOfWork);
-    attachToDevice(query: any): Promise<any[]>;
-    boot(query: any, count: any, shouldUpdate?: boolean): Promise<any[]>;
+    attachToDevice(query: any): Promise<IDevice[]>;
+    boot(query: any, count: any, shouldUpdate?: boolean): Promise<IDevice[]>;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
-    killDevices(query?: any): Promise<any[]>;
+    killDevices(query?: any): Promise<IDevice[]>;
     refreshData(query: any, updateQuery: any): Promise<{}>;
     dropdb(): Promise<{}>;
-    update(token: any, udpateQuery: any): Promise<any>;
+    update(token: any, udpateQuery: any): Promise<IDevice>;
     checkDeviceStatus(maxUsageTime: any): void;
     private getMaxDeviceCount;
     private killOverUsedBusyDevices;
