@@ -101,11 +101,12 @@ $ launchctl start nativescript.mobile.devices.controller.server.plist
 https://gododblog.wordpress.com/2017/01/26/boot-start-script-by-systemd/
 
 $ sudo cp resources/nativescript.mobile.devices.controller.server.service /usr/lib/systemd/user/
-$ sudo chmod 664 /etc/systemd/system/nativescript.mobile.devices.controller.server.service
-$ sudo chmod 755 /home/nsbuilduser/git/ns-setup/infrastructure/
+$ sudo chmod 664 /usr/lib/systemd/user/system/nativescript.mobile.devices.controller.server.service
+$ sudo chmod 755 $HOME/git/mobile-devices-controller-server
 $ systemctl --user daemon-reload
 $ systemctl --user enable nativescript.mobile.devices.controller.server.service
 $ systemctl --user start nativescript.mobile.devices.controller.server.service
+$ systemctl --user status nativescript.mobile.devices.controller.server.service
 
 RESULT:
 
@@ -115,7 +116,7 @@ RESULT:
  Main PID: 3288 (sh)
    CGroup: /user.slice/user-1001.slice/user@1001.service/nativescript.mobile.devices.controller.server.service
            ├─3288 /bin/sh /home/nsbuilduser/git/ns-setup/infrastructure/start-shares-server-ubuntu.sh &
-           └─3289 node /home/nsbuilduser/.nvm/versions/node/v8.11.1/bin/shares-server --port 8800
+           └─3289 node /home/nsbuilduser/.nvm/versions/node/v8.11.1/bin/shares-server --port 8700
 
 ```
 

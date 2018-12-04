@@ -54,6 +54,23 @@ export class DevicesRoute extends BaseRoute {
       res.json("Device failed to boot!");
     });
 
+    const attachToDevice = function (req, res, next) {
+      req.setTimeout(0);
+      DevicesRoute._subscribe.pushSubscription(async () => {
+        await deviceManager.attachToDevice(req.query).then((devices) => {
+          log(`Attached devices`, devices);
+          res.json(devices);
+        }, (err) => {
+          res.json(`Failed to attache device ${err.message}`);
+        });
+      });
+    };
+
+    router.get("/devices/attach", attachToDevice, (req: Request, res: Response, next: NextFunction) => {
+      res.json("Device failed to attach!");
+    });
+
+
     const subscribeDeviceFilter = function (req, res, next) {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {

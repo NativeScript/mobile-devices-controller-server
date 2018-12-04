@@ -6,8 +6,6 @@ const server = require("../src/server");
 const debug = require("debug")("express:server");
 const http = require("http");
 
-const useLocalRepository = process.argv.indexOf("--mongodb") >= 0 || process.env['USE_MONOGDB_STORAGE'] || process.argv.indexOf("--startmongodb") >= 0 ? false : true;
-
 const normalizePort = (val) => {
   const port = parseInt(val, 10);
 
@@ -94,7 +92,7 @@ const start = async () => {
             mongoDbProcess = require("child_process").spawnSync("mongod", args);
           });
 
-          const app = (await server.Server.bootstrap(useLocalRepository)).app;
+          const app = (await server.Server.bootstrap()).app;
           app.set("port", httpPort);
           console.log("Port: ", httpPort);
           httpServer = http.createServer(app);
@@ -109,12 +107,7 @@ const start = async () => {
         reject();
       }
     } else {
-      if (!useLocalRepository) {
-        console.log("Skip starting of mongodb!!!");
-      } else {
-        console.log("Using local repository!");
-      }
-      const app = (await server.Server.bootstrap(useLocalRepository)).app;
+      const app = (await server.Server.bootstrap()).app;
       app.set("port", httpPort);
       console.log("Port: ", httpPort);
 

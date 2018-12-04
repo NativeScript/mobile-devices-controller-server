@@ -10,6 +10,10 @@
 		<true/>
 		<key>Label</key>
 		<string>nativescript.mobile.devices.controller.server</string>
+		<dict>
+			<key>PATH</key>
+			<string>usr/local/opt/:/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH</string>
+		</dict>
 		<key>ProgramArguments</key>
 		<array>
 			<string>/Users/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.sh</string>
