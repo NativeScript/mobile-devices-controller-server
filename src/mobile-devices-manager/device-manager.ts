@@ -23,6 +23,43 @@ export class DeviceManager {
         this._usedVirtualDevices = new Map<string, VirtualDeviceController>();
     }
 
+    public async attachToDevice(query) {
+        const simulators = await this._unitOfWork.devices.find(query);
+        const attachedDevices = new Array<IDevice>();
+
+        for (var index = 0; index < simulators.length; index++) {
+            let device: IDevice = simulators[index];
+            let virtualDeviceController;
+            device = await virtualDeviceController.attachToDevice(device);
+            if (this._usedVirtualDevices.has(device.token)) {
+                virtualDeviceController = this._usedVirtualDevices.get(device.token);
+            } else {
+                virtualDeviceController = new VirtualDeviceController(device.platform);
+                this.addVirtualDevice(virtualDeviceController);    
+                
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
+                    await this.markAsShutdown(device);
+                    this.removeVirtualDevice(device.token);
+                });
+    
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (device: IDevice) => {
+                });
+    
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
+                    // await this.markAsShutdown(device);
+                    // this.removeVirtualDevice(device.token);
+                });
+            }
+
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (device: IDevice) => {
+                console.log("Attached device", device);
+            });
+
+            attachedDevices.push(device);
+        }
+        return attachedDevices;
+    }
+
     public async boot(query, count, shouldUpdate = true) {
         if (!query.platform) {
             query.platform = query.platform ? query.platform : (query.type === DeviceType.EMULATOR ? Platform.ANDROID : Platform.IOS);
@@ -38,7 +75,7 @@ export class DeviceManager {
         for (var index = 0; index < maxDevicesToBoot; index++) {
             let device: IDevice = simulators[index];
             const virtualDeviceController = new VirtualDeviceController(device.platform);
-            device = await virtualDeviceController.startDevice(device, {});
+            device = await virtualDeviceController.startDevice(device, options);
             this.addVirtualDevice(virtualDeviceController);
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {

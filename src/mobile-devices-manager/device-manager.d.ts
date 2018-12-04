@@ -5,6 +5,7 @@ export declare class DeviceManager {
     private _usedDevices;
     private _usedVirtualDevices;
     constructor(_unitOfWork: IUnitOfWork);
+    attachToDevice(query: any): Promise<any[]>;
     boot(query: any, count: any, shouldUpdate?: boolean): Promise<any[]>;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
