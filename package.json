@@ -1,7 +1,7 @@
 {
   "name": "mobile-devices-controller-server",
   "description": "Comunicate with emulators, simulators and real devices",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "author": "SvetoslavTSenov",
   "scripts": {
     "prepare": "tsc",
@@ -19,7 +19,7 @@
     "errorhandler": "^1.5.0",
     "express": "^4.16.0",
     "method-override": "^3.0.0",
-    "mobile-devices-controller": "^3.0.3",
+    "mobile-devices-controller": "^3.0.4",
     "mongoose": "^5.3.14",
     "morgan": "^1.9.0",
     "pug": "^2.0.3",
