@@ -280,30 +280,28 @@ export class DeviceManager {
 
     private getMaxDeviceCount(query) {
         const maxDevicesCount = ((query.type === DeviceType.EMULATOR || query.platform === Platform.ANDROID) ? process.env['MAX_EMU_COUNT'] : process.env['MAX_SIM_COUNT']) || 1;
-        console.log(`Max device count ${maxDevicesCount}`)
+        console.log(`Max device count allowed ${maxDevicesCount}`)
         return maxDevicesCount
     }
 
     private async resetDevicesCountToMaxLimitedCount(query) {
         const queryByPlatform = <any>{ "platform": query.platform };
+
         queryByPlatform.status = Status.BOOTED;
         let bootedDevices = (await this._unitOfWork.devices.find(<any>queryByPlatform));
-        logInfo(`Booted device count by ${queryByPlatform}: ${bootedDevices.length}`);
+        logInfo(`Booted device count by: `, queryByPlatform);
+        console.log(bootedDevices.length);
 
         queryByPlatform.status = Status.BUSY;
         let busyDevices = (await this._unitOfWork.devices.find(<any>queryByPlatform));
-        logInfo(`Busy device count by ${queryByPlatform}: ${busyDevices.length}`);
-
-        // if (this.killOverUsedBusyDevices(busyDevices).length > 0) {
-        //     busyDevices = (await this._unitOfWork.devices.find(<any>queryByPlatform));
-        //     logInfo(`Busy device count by ${queryByPlatform} after update: ${busyDevices.length}`);
-        // }
+        logInfo(`Busy device count by: `, queryByPlatform);
+        console.log(busyDevices.length);
 
         const devicesOverLimit = bootedDevices.filter(d => this.checkDeviceUsageHasReachedLimit(d));
         const devicesToKill = new Array();
         for (let index = 0; index < devicesOverLimit.length; index++) {
             const element = bootedDevices[index];
-            logWarn("Device usage has reached the limit! ", element.name);
+            logWarn(`${element.name}\ ${element.token} usage has reached the limit!`);
             await this.killDevice(element);
             this.resetUsage(element);
             devicesToKill.push(element);
@@ -318,11 +316,14 @@ export class DeviceManager {
         const maxDevicesCount = this.getMaxDeviceCount(query);
         if (busyDevices.length > maxDevicesCount) {
             logInfo("MAX device count: ", maxDevicesCount);
-            logError(`MAX DEVICE COUNT  by ${query.platform} REACHED!!!`);
+            logError(`MAX DEVICE COUNT  BY "${query.platform}" REACHED!!!`);
         }
 
         if (bootedDevices.length + busyDevices.length >= maxDevicesCount) {
-            logWarn(`Max device count by ${query.platform} reached!!! Devices count: ${bootedDevices.length + busyDevices.length} > max device count: ${maxDevicesCount}!!!`);
+            logWarn(`
+                Max device count by ${query.platform} reached!!!
+                Devices count: ${bootedDevices.length + busyDevices.length} > max device count allowed: ${maxDevicesCount}!!!
+            `);
             const devicesToKill = new Array();
             bootedDevices.forEach(d => devicesToKill.push({ name: d.name, token: d.token }));
             if (bootedDevices.length > 0) {
