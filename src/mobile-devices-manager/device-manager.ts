@@ -483,12 +483,12 @@ export class DeviceManager {
     private async checkForNewDevices() {
         const interval$ = interval(5000);
         interval$.pipe(
-            exhaustMap(() => DeviceController.getRunningDevices(false)),
-            skipWhile(() => this._dontCheckForDevice))
+            skipWhile(() => this._dontCheckForDevice),
+            exhaustMap(() => DeviceController.getRunningDevices(false)))
             .subscribe(async (runningDevices: IDevice[]) => {
                 for (let index = 0; index < runningDevices.length; index++) {
                     const runningDevice = runningDevices[index];
-                    console.log(`Running devices: ${runningDevice.token}/ ${runningDevice.name}`);
+                    // console.log(`Running devices: ${runningDevice.token}/ ${runningDevice.name}`);
                     if (this._dontCheckForDevice) return;
                     const device = await this._unitOfWork.devices.findSingle(<any>{ name: runningDevice.name, token: runningDevice.token });
                     if (!device || device.status === Status.SHUTDOWN) {
