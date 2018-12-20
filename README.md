@@ -101,7 +101,7 @@ $ launchctl start nativescript.mobile.devices.controller.server.plist
 https://gododblog.wordpress.com/2017/01/26/boot-start-script-by-systemd/
 
 $ sudo cp resources/nativescript.mobile.devices.controller.server.service /usr/lib/systemd/user/
-$ sudo chmod 664 /usr/lib/systemd/user/system/nativescript.mobile.devices.controller.server.service
+$ sudo chmod 664 /usr/lib/systemd/user/nativescript.mobile.devices.controller.server.service
 $ sudo chmod 755 $HOME/git/mobile-devices-controller-server
 $ systemctl --user daemon-reload
 $ systemctl --user enable nativescript.mobile.devices.controller.server.service

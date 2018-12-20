@@ -29,6 +29,10 @@ export class TestRepository<T extends IDevice> implements IRepository<T> {
          return Promise.resolve(obj)
     }
 
+    public async updateByName(name: string, obj: T) {
+        return Promise.resolve(obj)
+   }
+
     public add(item: T):Promise<any> {
         return Promise.reject("Not implemented!");
         // not sure but could be implement if we want to create new iPhone

@@ -1,9 +1,12 @@
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { IDevice } from "mobile-devices-controller";
+export declare const isProcessAlive: (arg: number) => boolean;
 export declare class DeviceManager {
     private _unitOfWork;
+    [verbose: string]: any;
     private _usedDevices;
     private _usedVirtualDevices;
+    private _dontCheckForDevice;
     constructor(_unitOfWork: IUnitOfWork);
     attachToDevice(query: any): Promise<IDevice[]>;
     boot(query: any, count: any, shouldUpdate?: boolean): Promise<IDevice[]>;
@@ -11,17 +14,16 @@ export declare class DeviceManager {
     unsubscribeFromDevice(query: any): Promise<IDevice>;
     killDevices(query?: any): Promise<IDevice[]>;
     refreshData(query: any, updateQuery: any): Promise<{}>;
-    dropdb(): Promise<{}>;
-    update(token: any, udpateQuery: any): Promise<IDevice>;
-    checkDeviceStatus(maxUsageTime: any): void;
+    dropDB(): Promise<{}>;
+    update(token: any, updateQuery: any): Promise<IDevice>;
     private getMaxDeviceCount;
-    private killOverUsedBusyDevices;
     private resetDevicesCountToMaxLimitedCount;
+    private killOverUsedBusyDevices;
+    private filterOptions;
     private killDevice;
     private markAsShutdown;
     private mark;
-    private unmark;
-    private createModel;
+    private unMark;
     private static deviceToJSON;
     private static convertIDeviceToQuery;
     private increaseDevicesUsage;
@@ -31,4 +33,5 @@ export declare class DeviceManager {
     private static getSimUsageLimit;
     private removeVirtualDevice;
     private addVirtualDevice;
+    private checkForNewDevices;
 }

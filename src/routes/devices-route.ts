@@ -4,6 +4,7 @@ import { DeviceManager } from "../mobile-devices-manager/device-manager";
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { Subscribe } from "../utils/subscription";
 import { log, logErr } from "../utils/utils";
+import { Status } from "mobile-devices-controller";
 
 export class DevicesRoute extends BaseRoute {
   private static _subscribe: Subscribe = new Subscribe();
@@ -24,6 +25,8 @@ export class DevicesRoute extends BaseRoute {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         repository.devices.find(req.query).then((devices) => {
+          devices.filter(d => d.status === Status.BOOTED)
+            .forEach(d => console.log(d))
           res.json(devices);
         }).catch((error) => {
           res.json(error);
@@ -75,7 +78,7 @@ export class DevicesRoute extends BaseRoute {
       req.setTimeout(0);
       DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
-        if (!query || (!query.platform && !query.type && !query.name)) {
+        if (!query && !query.name && !query.apiLevel && !query.platform) {
           res.json("Missing required filter");
         } else {
           log('Requested query: ', query);
@@ -156,7 +159,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     router.get("/devices/dropdb", (req: Request, res: Response, next: NextFunction) => {
-      deviceManager.dropdb().then((devices) => {
+      deviceManager.dropDB().then((devices) => {
         res.send(devices);
       });
     });

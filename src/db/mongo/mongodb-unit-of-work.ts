@@ -4,7 +4,6 @@ import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { MongoRepository } from "./mongo-repository";
 import * as schema from "./schemas/schema";
-import { IDevice } from "mobile-devices-controller";
 require('mongoose').Promise = require("q").Promise;
 
 const MONGODB_CONNECTION: string = "mongodb://127.0.0.1:27017/devices";

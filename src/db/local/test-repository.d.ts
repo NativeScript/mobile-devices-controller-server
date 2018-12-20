@@ -7,6 +7,7 @@ export declare class TestRepository<T extends IDevice> implements IRepository<T>
     findSingle(item: any): Promise<T>;
     private filter;
     update(token: string, obj: T): Promise<T>;
+    updateByName(name: string, obj: T): Promise<T>;
     add(item: T): Promise<any>;
     addMany(item: T[]): Promise<any>;
     deleteMany(item: any): Promise<any>;

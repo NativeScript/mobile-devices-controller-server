@@ -3,7 +3,7 @@ After=network.target
 
 [Service]
 Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
-ExecStart=/bin/sh /home/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.sh &
+ExecStart=/bin/sh /home/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.linux.sh &
 
 [Install]
 WantedBy=default.target

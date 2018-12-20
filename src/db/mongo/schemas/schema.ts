@@ -1,6 +1,9 @@
 import { Schema } from "mongoose";
+import { IDevice } from "mobile-devices-controller";
 
-export var device: Schema = new Schema({
+export type Optional<T> = { [P in keyof T]?: T[P] }
+
+const deviceModel = {
   name: String,
   token: String,
   type: String,
@@ -11,8 +14,11 @@ export var device: Schema = new Schema({
   startedAt: Number,
   busySince: Number,
   pid: Number,
-  apiLevel: String
-});
+  apiLevel: String,
+  parentProcessPid: Number,
+}
+
+export var device: Schema = new Schema(deviceModel);
 
 device.pre("save", function (next) {
   next();
