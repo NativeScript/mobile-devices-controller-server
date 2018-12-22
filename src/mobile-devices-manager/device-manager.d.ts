@@ -1,13 +1,20 @@
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { IDevice } from "mobile-devices-controller";
+import { Subscription } from 'rxjs';
 export declare const isProcessAlive: (arg: number) => boolean;
+export declare const filterOptions: (options: any) => any;
 export declare class DeviceManager {
     private _unitOfWork;
+    private _maxLiveDevicesCount;
     [verbose: string]: any;
     private _usedDevices;
     private _usedVirtualDevices;
     private _dontCheckForDevice;
-    constructor(_unitOfWork: IUnitOfWork);
+    intervalSubscriber: Subscription;
+    constructor(_unitOfWork: IUnitOfWork, _maxLiveDevicesCount?: {
+        iosCount: number;
+        androidCount: number;
+    });
     attachToDevice(query: any): Promise<IDevice[]>;
     boot(query: any, count: any, shouldUpdate?: boolean): Promise<IDevice[]>;
     subscribeForDevice(query: any): Promise<IDevice>;
@@ -18,9 +25,8 @@ export declare class DeviceManager {
     update(token: any, updateQuery: any): Promise<IDevice>;
     private getMaxDeviceCount;
     private resetDevicesCountToMaxLimitedCount;
-    private killOverUsedBusyDevices;
-    private filterOptions;
-    private killDevice;
+    killDevice(device: IDevice): Promise<void>;
+    cleanListeners(): Promise<void>;
     private markAsShutdown;
     private mark;
     private unMark;
@@ -33,5 +39,5 @@ export declare class DeviceManager {
     private static getSimUsageLimit;
     private removeVirtualDevice;
     private addVirtualDevice;
-    private checkForNewDevices;
+    checkForNewDevices(): Promise<void>;
 }

@@ -12,7 +12,7 @@ import {
     DeviceSignal
 } from "mobile-devices-controller";
 import { logWarn, logInfo, logError } from "../utils/utils";
-import { interval } from 'rxjs';
+import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
 import { spawnSync } from "child_process";
 
@@ -20,20 +20,31 @@ export const isProcessAlive = (arg: number) => {
     const result = spawnSync(`/bin/ps aux`, [`| grep -i ${arg} | grep -v grep | awk '{print $2}'`], {
         shell: true
     });
-    const test = result.output.filter(f => {
-        return new RegExp(arg.toString().trim()).test(f + "");
-    }).length > 0;
+    const test = !result.output.every(output => !output || output.length === 0)
+        && result.output
+            .filter(output => output && output.length > 0)
+            .every(f => {
+                return new RegExp(arg.toString().trim()).test(f + "");
+            });
     console.log(`Is process ${arg} alive: ${test}`);
     return test;
 }
+
+export const filterOptions = options => {
+    Object.keys(options).forEach(key => !options[key] && delete options[key]);
+    return options;
+};
+
 export class DeviceManager {
     [verbose: string]: any;
 
     private _usedDevices: Map<string, number>;
     private _usedVirtualDevices: Map<string, VirtualDeviceController>;
     private _dontCheckForDevice: boolean;
+    
+    public intervalSubscriber: Subscription;
 
-    constructor(private _unitOfWork: IUnitOfWork) {
+    constructor(private _unitOfWork: IUnitOfWork, private _maxLiveDevicesCount: { iosCount: number, androidCount: number } = { iosCount: 1, androidCount: 1 }) {
         this._usedDevices = new Map<string, number>();
         this._usedVirtualDevices = new Map<string, VirtualDeviceController>();
         this._dontCheckForDevice = false;
@@ -115,7 +126,7 @@ export class DeviceManager {
     }
 
     public async subscribeForDevice(query): Promise<IDevice> {
-        const shouldRestartDevice = false || query.restart;
+        const shouldRestartDevice = !!query.restart;
         delete query.restart;
         let searchQuery: IDevice = DeviceManager.convertIDeviceToQuery(query);
         delete searchQuery.info;
@@ -218,7 +229,7 @@ export class DeviceManager {
             result = await this.unMark(device);
         }
 
-        this.resetDevicesCountToMaxLimitedCount(device);
+        await this.resetDevicesCountToMaxLimitedCount(device);
 
         return result;
     }
@@ -279,21 +290,23 @@ export class DeviceManager {
     }
 
     private getMaxDeviceCount(query) {
-        const maxDevicesCount = ((query.type === DeviceType.EMULATOR || query.platform === Platform.ANDROID) ? process.env['MAX_EMU_COUNT'] : process.env['MAX_SIM_COUNT']) || 1;
+        const maxAndroidDeviceCount = process.env['MAX_EMU_COUNT'] || this._maxLiveDevicesCount.androidCount;
+        const maxIOSDeviceCount = process.env['MAX_SIM_COUNT'] || this._maxLiveDevicesCount.iosCount;
+        const maxDevicesCount = (query.type === DeviceType.EMULATOR || query.platform === Platform.ANDROID) ? maxAndroidDeviceCount : maxIOSDeviceCount;
         console.log(`Max device count allowed ${maxDevicesCount}`)
         return maxDevicesCount
     }
 
     private async resetDevicesCountToMaxLimitedCount(query) {
-        const queryByPlatform = <any>{ "platform": query.platform };
+        const queryByPlatform = <IDevice>{ "platform": query.platform };
 
         queryByPlatform.status = Status.BOOTED;
-        let bootedDevices = (await this._unitOfWork.devices.find(<any>queryByPlatform));
+        let bootedDevices = await this._unitOfWork.devices.find(queryByPlatform);
         logInfo(`Booted device count by: `, queryByPlatform);
         console.log(bootedDevices.length);
 
         queryByPlatform.status = Status.BUSY;
-        let busyDevices = (await this._unitOfWork.devices.find(<any>queryByPlatform));
+        let busyDevices = await this._unitOfWork.devices.find(queryByPlatform);
         logInfo(`Busy device count by: `, queryByPlatform);
         console.log(busyDevices.length);
 
@@ -309,7 +322,7 @@ export class DeviceManager {
 
         if (devicesToKill.length > 0) {
             query.status = Status.BOOTED;
-            bootedDevices = (await this._unitOfWork.devices.find(<any>query));
+            bootedDevices = await this._unitOfWork.devices.find(query);
             logInfo(`Booted devices count after reset by ${query}: ${bootedDevices.length}`);
         }
 
@@ -322,7 +335,7 @@ export class DeviceManager {
         if (bootedDevices.length + busyDevices.length >= maxDevicesCount) {
             logWarn(`
                 Max device count by ${query.platform} reached!!!
-                Devices count: ${bootedDevices.length + busyDevices.length} > max device count allowed: ${maxDevicesCount}!!!
+                Devices count: ${bootedDevices.length + busyDevices.length} >= max device count allowed: ${maxDevicesCount}!!!
             `);
             const devicesToKill = new Array();
             bootedDevices.forEach(d => devicesToKill.push({ name: d.name, token: d.token }));
@@ -334,44 +347,48 @@ export class DeviceManager {
                     await this.killDevice(element);
                 }
 
-                bootedDevices = (await this._unitOfWork.devices.find(<any>{ "platform": query.platform }));
-                logInfo(`Booted device count after update by ${queryByPlatform}: ${bootedDevices.length}`);
+                bootedDevices = (await this._unitOfWork.devices.find({ "platform": query.platform, status: Status.BOOTED }));
+                logInfo(`Booted device count after update by ${queryByPlatform.platform}: ${bootedDevices.length}`);
             } else {
                 logWarn(`No free devices to kill. Probably all devices are with status BUSY!!!`);
             }
         }
     }
 
-    private killOverUsedBusyDevices(devices) {
-        const updatedDevice = new Array();
-        for (let index = 0; index < devices.length; index++) {
-            const element = devices[index];
-            const twoHours = 7200000;
-            if (element.busySince && element.startedAt && element.startedAt - element.busySince > twoHours) {
-                logWarn(`Killing device, since it has been BUSY more than ${twoHours}`);
-                this.killDevice(element);
-                updatedDevice.push(element);
-            }
-        }
+    // private killOverUsedBusyDevices(devices) {
+    //     const updatedDevice = new Array();
+    //     for (let index = 0; index < devices.length; index++) {
+    //         const element = devices[index];
+    //         const twoHours = 7200000;
+    //         if (element.busySince && element.startedAt && element.startedAt - element.busySince > twoHours) {
+    //             logWarn(`Killing device, since it has been BUSY more than ${twoHours}`);
+    //             this.killDevice(element);
+    //             updatedDevice.push(element);
+    //         }
+    //     }
 
-        return updatedDevice;
-    }
+    //     return updatedDevice;
+    // }
 
-    private filterOptions = options => {
-        Object.keys(options).forEach(key => !options[key] && delete options[key]);
-        return options;
-    };
-
-    private async killDevice(device: IDevice) {
+    public async killDevice(device: IDevice) {
         logWarn("Killing device", device);
         const virtualDevice = this._usedVirtualDevices.get(device.token);
         if (virtualDevice) {
-            await virtualDevice.stopDevice();
             virtualDevice.virtualDevice.removeAllListeners();
+            this._usedVirtualDevices.delete(device.token);
+            await virtualDevice.stopDevice();
         } else {
             await DeviceController.kill(device);
         }
+        
         await this.markAsShutdown(device);
+    }
+
+    public async cleanListeners() {
+        this.intervalSubscriber.unsubscribe();
+        this._usedVirtualDevices.forEach((v, k, ds) => {
+            v.virtualDevice.removeAllListeners();
+        });
     }
 
     private async markAsShutdown(device: IDevice) {
@@ -481,9 +498,9 @@ export class DeviceManager {
         this._usedVirtualDevices.set(virtualDevice.virtualDevice.device.token, virtualDevice);
     }
 
-    private async checkForNewDevices() {
+    public async checkForNewDevices() {
         const interval$ = interval(5000);
-        interval$.pipe(
+        this.intervalSubscriber = interval$.pipe(
             skipWhile(() => this._dontCheckForDevice),
             exhaustMap(() => DeviceController.getRunningDevices(false)))
             .subscribe(async (runningDevices: IDevice[]) => {

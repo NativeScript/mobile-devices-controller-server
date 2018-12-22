@@ -1,58 +1,15 @@
-import { IRepository } from '../interfaces/repository';
 import {
     IDevice,
-    Device,
+    DeviceController
 } from 'mobile-devices-controller';
+import { Model } from "mongoose"; //import mongoose
+import { IRepository } from "../interfaces/repository";
+import { IDeviceModel } from "../interfaces/device-model";
+import { MongoRepository } from '../mongo/mongo-repository';
 
-export class TestRepository<T extends IDevice> implements IRepository<T> {
+export class TestRepository<T extends IDeviceModel> extends MongoRepository<T> {
 
-    constructor() {
-    }
-
-    public async find(query): Promise<Array<T>> {
-        return;
-    }
-
-    public async findByToken(token): Promise<T> {
-        return;
-    }
-
-    public async findSingle(item: any): Promise<T> {
-        return;
-    }
-
-    private async filter(query: any) {
-        return;
-    }
-
-    public async update(token: string, obj: T) {
-         return Promise.resolve(obj)
-    }
-
-    public async updateByName(name: string, obj: T) {
-        return Promise.resolve(obj)
-   }
-
-    public add(item: T):Promise<any> {
-        return Promise.reject("Not implemented!");
-        // not sure but could be implement if we want to create new iPhone
-    }
-
-    public addMany(item: T[]) :Promise<any> {
-        return Promise.reject("Not implemented!");  
-        // not sure but could be implement if we want to create new iPhone
-    }
-
-    public deleteMany(item: any) :Promise<any> {
-        return Promise.reject("Not implemented!");  
-        // not sure but could be implement if we want to create new iPhone
-    }
-
-    public async remove(item) {
-        // when we want to delete simulator or emulator
-    }
-
-    public dropDb() {
-        return null;
+    constructor(entities: Model<T>) {
+        super(entities);
     }
 }
