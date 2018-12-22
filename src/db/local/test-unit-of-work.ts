@@ -9,7 +9,7 @@ require('mongoose').Promise = require("q").Promise;
 
 const MONGODB_TEST_CONNECTION: string = "mongodb://127.0.0.1:27017/devices-test";
 export class TestUnitOfWork implements IUnitOfWork {
-    private _devices: IRepository<IDeviceModel>;
+    private _devices: IRepository<IDevice>;
     private _context: Connection;
 
     constructor() {
@@ -27,9 +27,9 @@ export class TestUnitOfWork implements IUnitOfWork {
         return mongoUnitOfWork;
     }
 
-    get devices(): IRepository<IDeviceModel> {
+    get devices(): IRepository<IDevice> {
         if (!this._devices) {
-            this._devices = new TestRepository<IDeviceModel>(this._context.model<IDeviceModel>("Device", schema.device));
+            this._devices = new TestRepository<IDevice>(this._context.model<IDevice>("Device", schema.device));
         }
         return this._devices;
     }

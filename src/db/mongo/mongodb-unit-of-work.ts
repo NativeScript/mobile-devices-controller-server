@@ -3,6 +3,7 @@ import { IUnitOfWork } from "../interfaces/unit-of-work";
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { MongoRepository } from "./mongo-repository";
+import { IDevice } from "mobile-devices-controller";
 import * as schema from "./schemas/schema";
 require('mongoose').Promise = require("q").Promise;
 
@@ -27,9 +28,9 @@ export class MongoUnitOfWork implements IUnitOfWork {
         return mongoUnitOfWork;
     }
 
-    get devices(): IRepository<IDeviceModel> {
+    get devices(): IRepository<IDevice> {
         if (!this._devices) {
-            this._devices = new MongoRepository<IDeviceModel>(this._context.model<IDeviceModel>("Device", schema.device));
+            this._devices = new MongoRepository<IDevice>(this._context.model<IDevice>("Device", schema.device));
         }
         return this._devices;
     }

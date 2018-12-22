@@ -1,7 +1,7 @@
 {
   "name": "mobile-devices-controller-server",
   "description": "Communicate with emulators, simulators and real devices",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "author": "SvetoslavTsenov",
   "scripts": {
     "prepare": "tsc",
@@ -37,6 +37,6 @@
     "mocha": "^5.2.0",
     "nodemon": "^1.11.0",
     "npm": "^6.5.0",
-    "typescript": "~3.1.6"
+    "typescript": "~3.2.2"
   }
 }
