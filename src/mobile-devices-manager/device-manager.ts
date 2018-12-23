@@ -9,24 +9,44 @@ import {
     DeviceType,
     Status,
     VirtualDeviceController,
-    DeviceSignal
+    DeviceSignal,
+    Device
 } from "mobile-devices-controller";
 import { logWarn, logInfo, logError } from "../utils/utils";
 import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
 import { spawnSync } from "child_process";
+import { filter } from "mobile-devices-controller/lib/utils";
+
+const copyDeviceToStrictQuery = device => {
+    let fakeQuery = new Device();
+    let query = {};
+    Object.getOwnPropertyNames(fakeQuery).forEach(prop => {
+        const p = prop.startsWith("_") ? prop.substring(1) : prop;
+        if (device[p]) {
+            query[p] = `^${device[p]}$`;
+            // query[p] = { $regex: new RegExp(`^${device[p]}$`) };
+        }
+    });
+
+    delete query["busySince"];
+    delete query["startedAt"];
+    delete query["config"];
+    delete query["info"];
+    delete query["pid"];
+
+    return query;
+}
 
 export const isProcessAlive = (arg: number) => {
-    const result = spawnSync(`/bin/ps aux`, [`| grep -i ${arg} | grep -v grep | awk '{print $2}'`], {
+    const result = spawnSync(`/bin/ps`, [`aux | grep -i ${arg}`, `| awk '{print $2}'`], {
         shell: true
     });
-    console.log("Process check:", result.output.toString());
-    const test = !result.output.every(output => !output || output.length === 0)
-        && result.output
-            .filter(output => output && output.length > 0)
-            .every(f => {
-                return new RegExp(arg.toString().trim()).test(f + "");
-            });
+
+    const test = result.stdout.length > 0 && new RegExp(arg + "", "ig").test(result.stdout.toString());
+    console.log("Process: ", result.stdout.toString());
+    console.log("Result of check: ", test);
+
     return test;
 }
 
