@@ -150,6 +150,8 @@ export class DeviceManager {
         for (let index = 0; index < busyDevices.length; index++) {
             const element: IDevice = busyDevices[index];
             if (element.parentProcessPid && !isProcessAlive(element.parentProcessPid)) {
+                logInfo(`Process ${element.parentProcessPid} should be not alive!`);
+                logInfo(`Killing ${element.name}/ ${element.token}!`);
                 await this.killDevice(element);
             }
         }
@@ -528,7 +530,6 @@ export class DeviceManager {
                         } else {
                             try {
                                 await this._unitOfWork.devices.update(runningDevice.token, <any>runningDevice).then(r => console.log("updated: ", r));
-
                             } catch (error) {
 
                             }

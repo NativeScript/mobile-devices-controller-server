@@ -74,7 +74,7 @@ Install the node packages via:
 
 # To setup nativescript.mobile.devices.controller.server.plist on mac
 ```
-$ sudo chown 777 ./resources/start-mobile-devices-controller-server.sh
+$ sudo chmod 777 ./resources/start-mobile-devices-controller-server.sh
 $ cp resources/nativescript.mobile.devices.controller.server.plist ~/Library/LaunchAgents
 $ cd ~/Library/LaunchAgents
 

@@ -2,7 +2,11 @@ import { DeviceManager, isProcessAlive } from "./device-manager";
 import { assert } from "chai";
 import { spawnSync } from "child_process";
 import { TestUnitOfWork } from "../db/local/test-unit-of-work";
-import { Platform, DeviceType, DeviceController, Status, IDevice, IOSController } from "mobile-devices-controller";
+import {
+    Platform,
+    DeviceType,
+    DeviceController, Status, IDevice, IOSController
+} from "mobile-devices-controller";
 
 const deviceToQuery = device => {
     let query: IDevice = {};
@@ -49,7 +53,7 @@ describe("devices", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
         deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        deviceManager.intervalSubscriber.unsubscribe();
+        // deviceManager.intervalSubscriber.unsubscribe();
         await deviceManager.refreshData({}, {});
     });
 
@@ -295,6 +299,18 @@ describe("devices", async () => {
             });
 
             it("subscribe for 2 simulator iPhone XR", async () => {
+                let tempQuery1 = <any>{};
+                Object.assign(tempQuery1, query);
+                const dummyProcess = spawnSync("ls", { shell: true });
+                tempQuery1.parentProcessPid = dummyProcess.pid;
+                const subscribedDevice1 = (await deviceManager.subscribeForDevice(tempQuery1));
+                const subscribedDevice2 = (await deviceManager.subscribeForDevice(query));
+                const devices = await unitOfWork.devices.find({ status: Status.BUSY, platform: platform });
+                console.log("Device length: ", devices.length);
+                assert.isTrue(devices.length === 1, "Device length should be 1, since the first one has a parentProcessPid which is not alive!");
+            });
+
+            it("subscribe for simulators iPhone XR", async () => {
                 let tempQuery1 = <any>{};
                 Object.assign(tempQuery1, query);
                 const dummyProcess = spawnSync("ls", { shell: true });
