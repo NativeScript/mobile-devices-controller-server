@@ -20,6 +20,7 @@ export const isProcessAlive = (arg: number) => {
     const result = spawnSync(`/bin/ps aux`, [`| grep -i ${arg} | grep -v grep | awk '{print $2}'`], {
         shell: true
     });
+    console.log("Process check:", result.output.toString());
     const test = !result.output.every(output => !output || output.length === 0)
         && result.output
             .filter(output => output && output.length > 0)
