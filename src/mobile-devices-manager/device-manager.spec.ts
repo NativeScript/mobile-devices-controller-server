@@ -49,7 +49,7 @@ describe("devices", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
         deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        //deviceManager.intervalSubscriber.unsubscribe();
+        deviceManager.intervalSubscriber.unsubscribe();
         await deviceManager.refreshData({}, {});
     });
 
@@ -207,7 +207,6 @@ describe("devices", async () => {
         });
 
         describe("subscribe for Emulator-Api28-Google", async () => {
-
             const deviceName = "^Emulator-Api28-Google$";
             const apiLevel = "28";
             const platform = Platform.ANDROID;
@@ -254,17 +253,16 @@ describe("devices", async () => {
                 DeviceController.killAll(DeviceType.SIMULATOR);
             })
 
-            // it("create simulator", async () => {
-            //     const simulator = (await unitOfWork.devices.find(query))[0];
-            //     const deviceName = `test-device-${Date.now()}`;
-            //     simulator.token = undefined;
-            //     const testDevice = IOSController.fullResetOfSimulator({ name: deviceName, apiLevel: simulator.apiLevel, token: simulator.token, initType: "iPhone XR" });
-            //     const isCreated = await unitOfWork.devices.findByToken(testDevice.token);
-            //     assert.isTrue(isCreated !== null);
-            //     IOSController.deleteDevice(testDevice.token);
-            //     const isDeleted = DeviceController.getDevices({ platform: platform, name: testDevice.name });
-            //     //assert(!isDeleted, "Device is not deleted!");
-            // });
+            it("create simulator", async () => {
+                const simulator = (await unitOfWork.devices.find({ name: "iPhone XR", apiLevel: "12.0" }))[0];
+                const testDevice = IOSController.fullResetOfSimulator({ name: simulator.name, apiLevel: simulator.apiLevel, token: simulator.token });
+                const isCreated = (await DeviceController.getDevices({ token: testDevice.token }))[0];
+                assert.isTrue(isCreated && isCreated.status === Status.SHUTDOWN);
+                IOSController.deleteDevice(testDevice.token);
+                const isDeleted = await DeviceController.getDevices({ token: testDevice.token });
+                assert.isTrue(!isDeleted || isDeleted.length === 0, "Device is not deleted!");
+                await deviceManager.refreshData({}, {});
+            });
 
             it("subscribe for ^iPhone XR$ ios 12.*", async () => {
                 const subscribedDevice = (await deviceManager.subscribeForDevice(query));

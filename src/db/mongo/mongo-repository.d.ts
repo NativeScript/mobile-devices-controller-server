@@ -11,6 +11,7 @@ export declare class MongoRepository<T extends IDeviceModel> implements IReposit
     findByToken(token: string): Promise<T>;
     findSingle(query: T): Promise<T>;
     update(token: string, values: T): Promise<any>;
+    updateById(obj: any, values: T): Promise<any>;
     updateByName(name: string, values: T): Promise<any>;
     remove(item: T): Promise<any>;
     dropDb(): Promise<void>;

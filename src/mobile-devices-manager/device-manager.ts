@@ -26,7 +26,6 @@ export const isProcessAlive = (arg: number) => {
             .every(f => {
                 return new RegExp(arg.toString().trim()).test(f + "");
             });
-    console.log(`Is process ${arg} alive: ${test}`);
     return test;
 }
 
@@ -41,7 +40,7 @@ export class DeviceManager {
     private _usedDevices: Map<string, number>;
     private _usedVirtualDevices: Map<string, VirtualDeviceController>;
     private _dontCheckForDevice: boolean;
-    
+
     public intervalSubscriber: Subscription;
 
     constructor(private _unitOfWork: IUnitOfWork, private _maxLiveDevicesCount: { iosCount: number, androidCount: number } = { iosCount: 1, androidCount: 1 }) {
@@ -100,12 +99,16 @@ export class DeviceManager {
         for (var index = 0; index < maxDevicesToBoot; index++) {
             let device: IDevice = simulators[index];
             const virtualDeviceController = new VirtualDeviceController(device.platform);
-            device = await virtualDeviceController.startDevice(device, options);
+            const token = device.token;
+            const bootedDevice = await virtualDeviceController.startDevice(device, options);
+            if (bootedDevice.token !== token) {
+                await this._unitOfWork.devices.updateById(device, { token: bootedDevice.token, status: bootedDevice.status });
+            }
             this.addVirtualDevice(virtualDeviceController);
 
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
-                await this.markAsShutdown(device);
-                this.removeVirtualDevice(device.token);
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => {
+                await this.markAsShutdown(d);
+                this.removeVirtualDevice(d.token);
             });
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (device: IDevice) => {
@@ -115,9 +118,9 @@ export class DeviceManager {
             });
 
             if (shouldUpdate) {
-                const result = await this._unitOfWork.devices.update(device.token, device);
+                const result = await this._unitOfWork.devices.update(bootedDevice.token, device);
             }
-            startedDevices.push(device);
+            startedDevices.push(bootedDevice);
         }
 
         this._dontCheckForDevice = false;
@@ -380,7 +383,7 @@ export class DeviceManager {
         } else {
             await DeviceController.kill(device);
         }
-        
+
         await this.markAsShutdown(device);
     }
 

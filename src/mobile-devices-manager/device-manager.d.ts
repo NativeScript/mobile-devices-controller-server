@@ -15,14 +15,14 @@ export declare class DeviceManager {
         iosCount: number;
         androidCount: number;
     });
-    attachToDevice(query: any): Promise<any[]>;
-    boot(query: any, count: any, shouldUpdate?: boolean): Promise<any[]>;
+    attachToDevice(query: any): Promise<IDevice[]>;
+    boot(query: any, count: any, shouldUpdate?: boolean): Promise<IDevice[]>;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
-    killDevices(query?: any): Promise<any[]>;
+    killDevices(query?: any): Promise<IDevice[]>;
     refreshData(query: any, updateQuery: any): Promise<{}>;
     dropDB(): Promise<{}>;
-    update(token: any, updateQuery: any): Promise<any>;
+    update(token: any, updateQuery: any): Promise<IDevice>;
     private getMaxDeviceCount;
     private resetDevicesCountToMaxLimitedCount;
     killDevice(device: IDevice): Promise<void>;

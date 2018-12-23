@@ -1,6 +1,7 @@
 import { Model } from "mongoose"; //import mongoose
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
+import { ObjectId } from "mongodb"
 
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
@@ -53,13 +54,19 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
 
     public async update(token: string, values: T) {
         const device: IDeviceModel = await this._entitySet.findOne({ "token": token });
-        const result = await this._entitySet.update({ "token": token }, this.copyDeviceToIDeviceModel(values, device));
+        const result = await this._entitySet.updateOne({ "token": token }, this.copyDeviceToIDeviceModel(values, device));
+        return result;
+    }
+
+    public async updateById(obj, values: T) {
+        const device: IDeviceModel = await this._entitySet.findOne({ "_id": ObjectId(obj.id) });
+        const result = await this._entitySet.updateOne({ "_id": ObjectId(obj.id) }, this.copyDeviceToIDeviceModel(values, device));
         return result;
     }
 
     public async updateByName(name: string, values: T) {
         const device: IDeviceModel = await this._entitySet.findOne({ "name": name });
-        const result = await this._entitySet.update({ "name": name }, this.copyDeviceToIDeviceModel(values, device));
+        const result = await this._entitySet.updateOne({ "name": name }, this.copyDeviceToIDeviceModel(values, device));
         return result;
     }
 
@@ -73,6 +80,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
 
     private copyDeviceToIDeviceModel(device: T, deviceModel: IDeviceModel) {
         if (!device) return deviceModel;
+        if (!deviceModel) return {};
 
         deviceModel['_doc']['name'] = device['name'];
         deviceModel['_doc']['pid'] = device['pid'];
@@ -85,7 +93,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
         deviceModel['_doc']['config'] = device['config'] || "";
         deviceModel['_doc']['apiLevel'] = device['apiLevel'];
         deviceModel['_doc']['parentProcessPid'] = device['parentProcessPid'];
-        
+
         return deviceModel;
     }
 }
