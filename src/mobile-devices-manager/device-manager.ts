@@ -68,7 +68,7 @@ export class DeviceManager {
         this._usedDevices = new Map<string, number>();
         this._usedVirtualDevices = new Map<string, VirtualDeviceController>();
         this._dontCheckForDevice = false;
-        this.checkForNewDevices();
+        //this.checkForNewDevices();
     }
 
     public async attachToDevice(query) {
