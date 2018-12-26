@@ -84,7 +84,6 @@ export class DeviceManager {
                 device = await virtualDeviceController.attachToDevice(device);
             } else {
                 virtualDeviceController = new VirtualDeviceController(device.platform);
-                device = await virtualDeviceController.attachToDevice(device);
                 this.addVirtualDevice(virtualDeviceController);
 
                 virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
@@ -97,6 +96,8 @@ export class DeviceManager {
 
                 virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
                 });
+
+                device = await virtualDeviceController.attachToDevice(device);
             }
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (device: IDevice) => {
@@ -121,10 +122,6 @@ export class DeviceManager {
             let device: IDevice = simulators[index];
             const virtualDeviceController = new VirtualDeviceController(device.platform);
             const token = device.token;
-            const bootedDevice = await virtualDeviceController.startDevice(device, options);
-            if (bootedDevice.token !== token) {
-                await this._unitOfWork.devices.updateById(device, { token: bootedDevice.token, status: bootedDevice.status });
-            }
             this.addVirtualDevice(virtualDeviceController);
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => {
@@ -137,6 +134,11 @@ export class DeviceManager {
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
             });
+
+            const bootedDevice = await virtualDeviceController.startDevice(device, options);
+            if (bootedDevice.token !== token) {
+                await this._unitOfWork.devices.updateById(device, { token: bootedDevice.token, status: bootedDevice.status });
+            }
 
             if (shouldUpdate) {
                 const result = await this._unitOfWork.devices.update(bootedDevice.token, device);
