@@ -84,7 +84,6 @@ export class DeviceManager {
                 device = await virtualDeviceController.attachToDevice(device);
             } else {
                 virtualDeviceController = new VirtualDeviceController(device.platform);
-                this.addVirtualDevice(virtualDeviceController);
 
                 virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
                     await this.markAsShutdown(device);
@@ -98,6 +97,7 @@ export class DeviceManager {
                 });
 
                 device = await virtualDeviceController.attachToDevice(device);
+                this.addVirtualDevice(virtualDeviceController);
             }
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (device: IDevice) => {
@@ -121,8 +121,6 @@ export class DeviceManager {
         for (var index = 0; index < maxDevicesToBoot; index++) {
             let device: IDevice = simulators[index];
             const virtualDeviceController = new VirtualDeviceController(device.platform);
-            const token = device.token;
-            this.addVirtualDevice(virtualDeviceController);
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => {
                 await this.markAsShutdown(d);
@@ -135,7 +133,9 @@ export class DeviceManager {
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
             });
 
+            const token = device.token;
             const bootedDevice = await virtualDeviceController.startDevice(device, options);
+            this.addVirtualDevice(virtualDeviceController);
             if (bootedDevice.token !== token) {
                 await this._unitOfWork.devices.updateById(device, { token: bootedDevice.token, status: bootedDevice.status });
             }
@@ -213,7 +213,7 @@ export class DeviceManager {
             }
         }
 
-        if (device) {
+        if (device && device.token) {
             device.info = query.info;
             device.parentProcessPid = parentPid;
             const update = await this.mark(device);

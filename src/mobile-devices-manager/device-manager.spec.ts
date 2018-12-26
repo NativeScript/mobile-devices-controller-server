@@ -218,7 +218,6 @@ describe("devices", async () => {
 
             after("after subscribe android", async () => {
                 await deviceManager.killDevices({ platform: platform, status: Status.BOOTED });
-                await deviceManager.cleanListeners();
                 deviceManager = null;
             });
 
