@@ -413,7 +413,7 @@ export class DeviceManager {
     }
 
     public async cleanListeners() {
-        this.intervalSubscriber.unsubscribe();
+        this.intervalSubscriber && this.intervalSubscriber.unsubscribe();
         this._usedVirtualDevices.forEach((v, k, ds) => {
             v.virtualDevice.removeAllListeners();
         });
