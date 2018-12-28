@@ -257,7 +257,7 @@ describe("devices", async () => {
             })
 
             it("create simulator", async () => {
-                const simulator = (await unitOfWork.devices.find({ name: "iPhone XR", apiLevel: "12.0" }))[0];
+                const simulator = (await unitOfWork.devices.find({ name: "iPhone XR", apiLevel: "12.1" }))[0];
                 const testDevice = IOSController.fullResetOfSimulator({ name: simulator.name, apiLevel: simulator.apiLevel, token: simulator.token });
                 const isCreated = (await DeviceController.getDevices({ token: testDevice.token }))[0];
                 assert.isTrue(isCreated && isCreated.status === Status.SHUTDOWN);
