@@ -85,24 +85,15 @@ export class DeviceManager {
             } else {
                 virtualDeviceController = new VirtualDeviceController(device.platform);
 
-                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
-                    await this.markAsShutdown(device);
-                    this.removeVirtualDevice(device.token);
-                });
-
-                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (device: IDevice) => {
-                });
-
-                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
-                });
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => await this.onDeviceKilledSignal(d));
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (d: IDevice) => await this.onDeviceErrorSignal(d));
+                virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));
 
                 device = await virtualDeviceController.attachToDevice(device);
                 this.addVirtualDevice(virtualDeviceController);
             }
 
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (device: IDevice) => {
-                console.log("Attached device: ", device);
-            });
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));            
 
             attachedDevices.push(device);
         }
@@ -122,16 +113,8 @@ export class DeviceManager {
             let device: IDevice = simulators[index];
             const virtualDeviceController = new VirtualDeviceController(device.platform);
 
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => {
-                await this.markAsShutdown(d);
-                this.removeVirtualDevice(d.token);
-            });
-
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (device: IDevice) => {
-            });
-
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (device: IDevice) => {
-            });
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => await this.onDeviceKilledSignal(d));
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (d: IDevice) => await this.onDeviceErrorSignal(d));
 
             const token = device.token;
             const bootedDevice = await virtualDeviceController.startDevice(device, options);
@@ -317,6 +300,18 @@ export class DeviceManager {
         return await this._unitOfWork.devices.update(token, updateQuery)
     }
 
+    private async onDeviceKilledSignal(device: IDevice) {
+        await this.markAsShutdown(device);
+        this.removeVirtualDevice(device.token);
+    }
+
+    private async onDeviceErrorSignal(device: IDevice) {
+    }
+
+    private async onDeviceAttachedSignal(device: IDevice) {
+        console.log("Attached device: ", device);
+    }
+
     private getMaxDeviceCount(query) {
         const maxAndroidDeviceCount = process.env['MAX_EMU_COUNT'] || this._maxLiveDevicesCount.androidCount;
         const maxIOSDeviceCount = process.env['MAX_SIM_COUNT'] || this._maxLiveDevicesCount.iosCount;
@@ -425,7 +420,7 @@ export class DeviceManager {
         updateQuery['startedAt'] = -1;
         updateQuery['busySince'] = -1;
         const log = await this._unitOfWork.devices.update(device.token, updateQuery);
-        logInfo(`On device killed: `, log);
+        console.log(`On device killed: `, log);
     }
 
     private async mark(query): Promise<IDevice> {

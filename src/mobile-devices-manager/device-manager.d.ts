@@ -23,6 +23,9 @@ export declare class DeviceManager {
     refreshData(query: any, updateQuery: any): Promise<{}>;
     dropDB(): Promise<{}>;
     update(token: any, updateQuery: any): Promise<IDevice>;
+    private onDeviceKilledSignal;
+    private onDeviceErrorSignal;
+    private onDeviceAttachedSignal;
     private getMaxDeviceCount;
     private resetDevicesCountToMaxLimitedCount;
     killDevice(device: IDevice): Promise<void>;
