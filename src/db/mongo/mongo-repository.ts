@@ -2,8 +2,21 @@ import { Model } from "mongoose"; //import mongoose
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { ObjectId } from "mongodb"
-import { isRegExp } from "util";
+import { isRegExp, isObject, isFunction } from "util";
 
+const copyDeviceToStrictQuery = source => {
+    let query = {};
+    for (const key in source) {
+        if (isRegExp(source[key]) || (!isObject(source[key]) && !isFunction(source[key]))) {
+            const p = key.startsWith("_") ? key.substring(1) : key;
+            if (source[p] && !p.startsWith("$")) {
+                query[p] = source[p];
+            }
+        }
+    }
+
+    return query;
+}
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
 
@@ -31,8 +44,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     public async find(query: T): Promise<Array<T>> {
         const q = MongoRepository.convertQueryToConditionalOne(query);
 
-        const result =
-            await this._entitySet.find(q);
+        const result = await this._entitySet.find(q);
         const array = new Array<T>();
 
         result.forEach(element => {
@@ -87,16 +99,17 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
 
     private static convertQueryToConditionalOne(query) {
         if (query.apiLevel || query.releaseVersion) {
+            const newQuery: any = copyDeviceToStrictQuery(query);
             const apiLevelS = isRegExp(query.apiLevel) ? new RegExp(query.apiLevel) : query.apiLevel;
             const releaseVersionS = isRegExp(query.releaseVersion) ? new RegExp(query.releaseVersion) : query.releaseVersion;
 
-            delete query.apiLevel;
-            delete query.releaseVersion;
+            delete newQuery.apiLevel;
+            delete newQuery.releaseVersion;
             const q = <any>{};
             q["$and"] = [
                 { "$or": [{ apiLevel: { $in: [apiLevelS, releaseVersionS] } }] },
-                { "$or": [{ releaseVersion: { $in: [apiLevelS, releaseVersionS] } }] },
-                query];
+                // { "$or": [{ releaseVersion: { $in: [apiLevelS, releaseVersionS] } }] },
+                newQuery];
 
             return q;
         }

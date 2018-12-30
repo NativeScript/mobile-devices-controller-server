@@ -128,13 +128,11 @@ describe("devices", async () => {
         const query = { name: deviceName, apiLevel: apiLevel };
 
         it("should run Emulator-Api28-Google", async () => {
-            console.log("", (await unitOfWork.devices.findSingle(query)));
             const startedDevice = (await deviceManager.boot({ name: deviceName, apiLevel: apiLevel, platform: Platform.ANDROID }, 1, true))[0];
-            console.log("TEWST", await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             assert.isTrue(devices.some(d => d.name === deviceName), `Failed to start device ${startedDevice.name}`);
 
-            const test = (await unitOfWork.devices.findSingle(query));
+            const test = (await unitOfWork.devices.findSingle({ name: deviceName, apiLevel: apiLevel }));
             assert.isTrue(test.status === Status.BOOTED, "Device is not marked as booted!");
         });
 
