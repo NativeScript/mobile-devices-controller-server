@@ -15,6 +15,7 @@ const deviceModel = {
   busySince: Number,
   pid: Number,
   apiLevel: String,
+  releaseVersion: String,
   parentProcessPid: Number,
 }
 

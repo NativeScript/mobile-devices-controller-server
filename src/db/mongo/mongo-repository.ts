@@ -2,6 +2,7 @@ import { Model } from "mongoose"; //import mongoose
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { ObjectId } from "mongodb"
+import { isRegExp } from "util";
 
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
@@ -23,11 +24,15 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     public async deleteMany(item: any) {
-        return await this._entitySet.deleteMany(item);
+        const q = MongoRepository.convertQueryToConditionalOne(item);
+        return await this._entitySet.deleteMany(q);
     }
 
     public async find(query: T): Promise<Array<T>> {
-        const result = await this._entitySet.find(query);
+        const q = MongoRepository.convertQueryToConditionalOne(query);
+
+        const result =
+            await this._entitySet.find(q);
         const array = new Array<T>();
 
         result.forEach(element => {
@@ -47,7 +52,8 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     public async findSingle(query: T): Promise<T> {
-        const result = await this._entitySet.findOne(query);
+        const q = MongoRepository.convertQueryToConditionalOne(query);
+        const result = await this._entitySet.findOne(q);
 
         return result;
     }
@@ -71,11 +77,31 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     public async remove(item: T) {
-        return await this._entitySet.remove(item);
+        const q = MongoRepository.convertQueryToConditionalOne(item);
+        return await this._entitySet.remove(q);
     }
 
     public async dropDb() {
         await this._entitySet.db.dropDatabase();
+    }
+
+    private static convertQueryToConditionalOne(query) {
+        if (query.apiLevel || query.releaseVersion) {
+            const apiLevelS = isRegExp(query.apiLevel) ? new RegExp(query.apiLevel) : query.apiLevel;
+            const releaseVersionS = isRegExp(query.releaseVersion) ? new RegExp(query.releaseVersion) : query.releaseVersion;
+
+            delete query.apiLevel;
+            delete query.releaseVersion;
+            const q = <any>{};
+            q["$and"] = [
+                { "$or": [{ apiLevel: { $in: [apiLevelS, releaseVersionS] } }] },
+                { "$or": [{ releaseVersion: { $in: [apiLevelS, releaseVersionS] } }] },
+                query];
+
+            return q;
+        }
+
+        return query;
     }
 
     private copyDeviceToIDeviceModel(device: T, deviceModel: IDeviceModel) {
@@ -93,6 +119,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
         deviceModel['_doc']['config'] = device['config'] || "";
         deviceModel['_doc']['apiLevel'] = device['apiLevel'];
         deviceModel['_doc']['parentProcessPid'] = device['parentProcessPid'];
+        deviceModel['_doc']['releaseVersion'] = device['releaseVersion'];
 
         return deviceModel;
     }

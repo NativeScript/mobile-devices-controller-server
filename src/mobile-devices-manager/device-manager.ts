@@ -125,7 +125,7 @@ export class DeviceManager {
             }
 
             if (shouldUpdate) {
-                const result = await this._unitOfWork.devices.update(bootedDevice.token, device);
+                const result = await this._unitOfWork.devices.update(bootedDevice.token, bootedDevice);
             }
             startedDevices.push(bootedDevice);
         }
@@ -183,13 +183,14 @@ export class DeviceManager {
                 Object.getOwnPropertyNames(deviceToBoot).forEach(p => !deviceToBoot[p] && delete deviceToBoot[p])
 
                 device = (await this.boot(deviceToBoot, 1, false))[0];
-                device.info = info;
-                device.parentProcessPid = parentPid;
-                this.resetUsage(device);
 
                 if (!device) {
                     delete searchQuery.status;
                     await this.unMark(searchQuery);
+                } else {
+                    device.info = info;
+                    device.parentProcessPid = parentPid;
+                    this.resetUsage(device);
                 }
             }
         }
@@ -458,6 +459,7 @@ export class DeviceManager {
             info: device.info,
             config: device.config,
             apiLevel: device.apiLevel,
+            releaseVersion: device.releaseVersion,
             process: device.process,
             pid: device.pid
         };
@@ -552,6 +554,7 @@ export class DeviceManager {
                         if (runningDevice.name) newDeviceQuery["name"] = runningDevice.name;
                         if (runningDevice.token) newDeviceQuery["token"] = runningDevice.token;
                         if (runningDevice.apiLevel) newDeviceQuery["apiLevel"] = runningDevice.apiLevel;
+                        if (runningDevice.releaseVersion) newDeviceQuery["releaseVersion"] = runningDevice.releaseVersion;
                         if (runningDevice.platform) newDeviceQuery["platform"] = runningDevice.platform;
                         if (runningDevice.type) newDeviceQuery["type"] = runningDevice.type;
 

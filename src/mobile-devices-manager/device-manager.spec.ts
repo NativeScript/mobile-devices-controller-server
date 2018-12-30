@@ -8,27 +8,27 @@ import {
     DeviceController, Status, IDevice, IOSController
 } from "mobile-devices-controller";
 
-const deviceToQuery = device => {
-    let query: IDevice = {};
-    Object.assign(query, device);
-    Object.getOwnPropertyNames(query).forEach(prop => {
-        if (query[prop]) {
-            const p = prop.startsWith("_") ? prop.substring(1) : prop;
-            query[p] = { $regex: new RegExp(query[p]) };
-        }
+// const deviceToQuery = device => {
+//     let query: IDevice = {};
+//     Object.assign(query, device);
+//     Object.getOwnPropertyNames(query).forEach(prop => {
+//         if (query[prop]) {
+//             const p = prop.startsWith("_") ? prop.substring(1) : prop;
+//             query[p] = { $regex: new RegExp(query[p]) };
+//         }
 
-        if (!query[prop] || prop.startsWith("_")) {
-            delete query[prop];
-        }
-    });
+//         if (!query[prop] || prop.startsWith("_")) {
+//             delete query[prop];
+//         }
+//     });
 
-    delete query["busySince"];
-    delete query["startedAt"];
-    delete query["config"];
-    delete query["pid"];
+//     delete query["busySince"];
+//     delete query["startedAt"];
+//     delete query["config"];
+//     delete query["pid"];
 
-    return query;
-}
+//     return query;
+// }
 
 describe("process handling", () => {
     it("current process should return is alive", () => {
@@ -78,7 +78,8 @@ describe("devices", async () => {
 
         it("should return ios devices", async () => {
             const devices = await unitOfWork.devices.find({ platform: Platform.IOS });
-            const test = devices.every(d => d.platform === Platform.IOS && (d.type === DeviceType.SIMULATOR || d.type === DeviceType.DEVICE));
+            const test = devices.every(d => d.platform === Platform.IOS
+                && (d.type === DeviceType.SIMULATOR || d.type === DeviceType.DEVICE));
             if (!test) {
                 devices.forEach(d => {
                     if (d.type !== DeviceType.SIMULATOR || d.platform !== Platform.IOS) {
@@ -90,7 +91,7 @@ describe("devices", async () => {
         });
 
         it("should return all ios devices iPhone XR and api level /^12.*$/", async () => {
-            const devices = await unitOfWork.devices.find({ name: "^iPhone XR$", apiLevel: "^12.*$" });
+            const devices = await unitOfWork.devices.find(<any>{ name: new RegExp("^iPhone XR$"), apiLevel: new RegExp("^12.*$") });
             const test = devices.every(d => d.name === "iPhone XR" && d.apiLevel.startsWith("12."));
             if (!test) {
                 devices.forEach(d => {
@@ -103,8 +104,7 @@ describe("devices", async () => {
         });
 
         it("should return all android devices Emulator-Api28-Google", async () => {
-            const query = deviceToQuery(<any>{ name: "^Emulator-Api28-Google$", apiLevel: "^28*" });
-            const devices = await unitOfWork.devices.find(query);
+            const devices = await unitOfWork.devices.find({ name: "Emulator-Api28-Google", apiLevel: "28" });
             const test = devices.every(d => d.name === "Emulator-Api28-Google" && d.apiLevel.startsWith("28"));
             if (!test) {
                 devices.forEach(d => {
@@ -125,14 +125,17 @@ describe("devices", async () => {
         const apiLevel = "28";
         const platform = Platform.ANDROID;
 
-        const query = deviceToQuery(<any>{ name: deviceName, apiLevel: apiLevel });
+        const query = { name: deviceName, apiLevel: apiLevel };
 
         it("should run Emulator-Api28-Google", async () => {
-            const startedDevice = (await deviceManager.boot(query, 1, true))[0];
+            console.log("", (await unitOfWork.devices.findSingle(query)));
+            const startedDevice = (await deviceManager.boot({ name: deviceName, apiLevel: apiLevel, platform: Platform.ANDROID }, 1, true))[0];
+            console.log("TEWST", await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             assert.isTrue(devices.some(d => d.name === deviceName), `Failed to start device ${startedDevice.name}`);
 
-            assert.isTrue((await unitOfWork.devices.findSingle(query)).status === Status.BOOTED, "Device is not marked as booted!");
+            const test = (await unitOfWork.devices.findSingle(query));
+            assert.isTrue(test.status === Status.BOOTED, "Device is not marked as booted!");
         });
 
         it("should be able to kill Emulator-Api28-Google and assert that device is marked as killed", async () => {
@@ -163,10 +166,10 @@ describe("devices", async () => {
         this.retries(2);
         this.timeout(999999);
 
-        const deviceName = "iPhone XR$";
-        const apiLevel = "12.*";
+        const deviceName = new RegExp("iPhone XR$");
+        const apiLevel = new RegExp("12.*");
         const platform = Platform.IOS;
-        const query = deviceToQuery(<any>{ name: deviceName, apiLevel: apiLevel });
+        const query = <any>{ name: deviceName, apiLevel: apiLevel };
 
         after("after", () => {
             DeviceController.killAll(DeviceType.SIMULATOR);
@@ -177,7 +180,8 @@ describe("devices", async () => {
             const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             assert.isTrue(devices.some(d => new RegExp(deviceName).test(d.name)), `Failed to start device ${startedDevice.name}`);
 
-            assert.isTrue((await unitOfWork.devices.findSingle(query)).status === Status.BOOTED, "Device is not marked as booted!");
+            const t = await unitOfWork.devices.findSingle(query);
+            assert.isTrue(t.status === Status.BOOTED, "Device is not marked as booted!");
         });
 
         it("should be able to kill iPhone XR and assert that device is marked as killed", async () => {
@@ -211,10 +215,10 @@ describe("devices", async () => {
         });
 
         describe("subscribe for Emulator-Api28-Google", async () => {
-            const deviceName = "^Emulator-Api28-Google$";
+            const deviceName = new RegExp("^Emulator-Api28-Google$");
             const apiLevel = "28";
             const platform = Platform.ANDROID;
-            const query = deviceToQuery(<any>{ name: deviceName, apiLevel: apiLevel });
+            const query = <any>{ name: deviceName, apiLevel: apiLevel };
 
             after("after subscribe android", async () => {
                 await deviceManager.killDevices({ platform: platform, status: Status.BOOTED });
@@ -241,10 +245,10 @@ describe("devices", async () => {
         });
 
         describe("subscribe for iPhone", async () => {
-            const deviceName = "^iPhone XR$";
-            const apiLevel = "12.*"
+            const deviceName = new RegExp("^iPhone XR$");
+            const apiLevel = new RegExp("12.*");
             const platform = Platform.IOS;
-            let query = deviceToQuery(<any>{ name: deviceName, apiLevel: apiLevel });
+            let query = <any>{ name: deviceName, apiLevel: apiLevel };
 
             before("before ios: ", () => {
                 deviceManager = new DeviceManager(unitOfWork, { iosCount: 5, androidCount: 1 });
