@@ -16,7 +16,6 @@ import { logWarn, logInfo, logError } from "../utils/utils";
 import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
 import { spawnSync } from "child_process";
-import { filter } from "mobile-devices-controller/lib/utils";
 
 const copyDeviceToStrictQuery = device => {
     let fakeQuery = new Device();
@@ -42,11 +41,13 @@ export const isProcessAlive = (arg: number) => {
     const result = spawnSync(`/bin/ps`, [`aux | grep -i ${arg}`, `| awk '{print $2}'`], {
         shell: true
     });
+    let test = false;
 
-    const test = result.stdout.length > 0 && new RegExp(arg + "", "ig").test(result.stdout.toString());
+    if (result.stdout.length > 0) {
+        test = result.stdout.toString().split("\n").some(r => new RegExp("^" + arg + "$", "ig").test(r));
+    }
     console.log("Process: ", result.stdout.toString());
     console.log("Result of check: ", test);
-
     return test;
 }
 
@@ -93,7 +94,7 @@ export class DeviceManager {
                 this.addVirtualDevice(virtualDeviceController);
             }
 
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));            
+            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));
 
             attachedDevices.push(device);
         }
@@ -137,13 +138,15 @@ export class DeviceManager {
     public async subscribeForDevice(query): Promise<IDevice> {
         const shouldRestartDevice = !!query.restart;
         delete query.restart;
+
         let searchQuery: IDevice = DeviceManager.convertIDeviceToQuery(query);
+        const info = searchQuery.info;
+        const parentPid = searchQuery.parentProcessPid;
         delete searchQuery.info;
+        delete searchQuery.parentProcessPid;
         searchQuery.status = Status.BOOTED;
 
         // get already booted device in order to reuse
-        const parentPid = searchQuery.parentProcessPid;
-        delete searchQuery.parentProcessPid;
         let device = await this._unitOfWork.devices.findSingle(searchQuery);
         if (shouldRestartDevice && device) {
             logInfo("Should restart device flag passed!")
@@ -156,7 +159,7 @@ export class DeviceManager {
         for (let index = 0; index < busyDevices.length; index++) {
             const element: IDevice = busyDevices[index];
             if (element.parentProcessPid && !isProcessAlive(element.parentProcessPid)) {
-                logInfo(`Process ${element.parentProcessPid} should be not alive!`);
+                logInfo(`Parent process ${element.parentProcessPid} is no longer live!`);
                 logInfo(`Killing ${element.name}/ ${element.token}!`);
                 await this.killDevice(element);
             }
@@ -168,11 +171,7 @@ export class DeviceManager {
             device = await this._unitOfWork.devices.findSingle(searchQuery);
 
             if (device) {
-                device.info = query.info;
-                device.parentProcessPid = parentPid;
-                const update = await this.mark(device);
-                device.busySince = update.busySince;
-                device.status = <Status>update.status;
+
                 const deviceToBoot: IDevice = {
                     token: device.token,
                     type: device.type,
@@ -180,12 +179,11 @@ export class DeviceManager {
                     apiLevel: device.apiLevel,
                     platform: device.platform
                 };
-                const bootedDevice = (await this.boot(deviceToBoot, 1, false))[0];
-                device.token = bootedDevice.token;
-                device.startedAt = bootedDevice.startedAt;
-                device.busySince = bootedDevice.startedAt;
-                device.status = bootedDevice.status;
-                device.pid = bootedDevice.pid;
+
+                Object.getOwnPropertyNames(deviceToBoot).forEach(p => !deviceToBoot[p] && delete deviceToBoot[p])
+
+                device = (await this.boot(deviceToBoot, 1, false))[0];
+                device.info = info;
                 device.parentProcessPid = parentPid;
                 this.resetUsage(device);
 
@@ -196,13 +194,10 @@ export class DeviceManager {
             }
         }
 
-        if (device && device.token) {
-            device.info = query.info;
+        if (device && device !== null && device.token !== null) {
+            device.info = info;
             device.parentProcessPid = parentPid;
             const update = await this.mark(device);
-            device.busySince = update.busySince;
-            device.status = update.status;
-            await this._unitOfWork.devices.update(device.token, device);
             device = await this._unitOfWork.devices.findByToken(device.token);
             this.increaseDevicesUsage(device);
         } else {
@@ -504,7 +499,7 @@ export class DeviceManager {
     }
 
     private static getEmuUsageLimit() {
-        return process.env["EMU_USAGE_LIMIT"] || 1;
+        return process.env["EMU_USAGE_LIMIT"] || 2;
     }
 
     private static getSimUsageLimit() {
