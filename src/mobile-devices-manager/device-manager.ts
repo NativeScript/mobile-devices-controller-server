@@ -501,7 +501,7 @@ export class DeviceManager {
     }
 
     private static getEmuUsageLimit() {
-        return process.env["EMU_USAGE_LIMIT"] || 2;
+        return process.env["EMU_USAGE_LIMIT"] || 1;
     }
 
     private static getSimUsageLimit() {
