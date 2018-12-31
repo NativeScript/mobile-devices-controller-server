@@ -20,8 +20,8 @@
                 "src/**/**spec.js",
                 "--timeout", 
                 "9999999",
-                "--grep",
-                "subscribe for iPhone"
+                // "--grep",
+                // "subscribe for simulators iPhone XR"
             ],
             "internalConsoleOptions": "openOnSessionStart"
         }

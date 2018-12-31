@@ -2,7 +2,6 @@ import { IUnitOfWork } from "../interfaces/unit-of-work";
 import { IRepository } from "../interfaces/repository";
 import { IDevice } from "mobile-devices-controller";
 import { TestRepository } from "./test-repository";
-import { IDeviceModel } from "../interfaces/device-model";
 import { Connection, createConnection } from "mongoose";
 import * as schema from "../mongo/schemas/schema";
 require('mongoose').Promise = require("q").Promise;
@@ -17,12 +16,15 @@ export class TestUnitOfWork implements IUnitOfWork {
 
     public static async createConnection(connectionString: string = MONGODB_TEST_CONNECTION) {
         const mongoUnitOfWork: TestUnitOfWork = new TestUnitOfWork();
-        mongoUnitOfWork._context = await createConnection(connectionString, {
-            server: {
-                reconnectTries: Number.MAX_VALUE,
-                autoReconnect: true
-            }
-        });
+        const options = {
+            connectTimeoutMS: 5000,
+            reconnectTries: Number.MAX_VALUE,
+            autoReconnect: true,
+            useNewUrlParser: true,
+            promiseLibrary: global.Promise
+        };
+
+        mongoUnitOfWork._context = await createConnection(connectionString, options);
 
         return mongoUnitOfWork;
     }

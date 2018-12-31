@@ -12,49 +12,9 @@ import {
     DeviceSignal,
     Device
 } from "mobile-devices-controller";
-import { logWarn, logInfo, logError } from "../utils/utils";
+import { logWarn, logInfo, logError, isProcessAlive } from "../utils/utils";
 import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
-import { spawnSync } from "child_process";
-
-const copyDeviceToStrictQuery = device => {
-    let fakeQuery = new Device();
-    let query = {};
-    Object.getOwnPropertyNames(fakeQuery).forEach(prop => {
-        const p = prop.startsWith("_") ? prop.substring(1) : prop;
-        if (device[p]) {
-            query[p] = `^${device[p]}$`;
-            // query[p] = { $regex: new RegExp(`^${device[p]}$`) };
-        }
-    });
-
-    delete query["busySince"];
-    delete query["startedAt"];
-    delete query["config"];
-    delete query["info"];
-    delete query["pid"];
-
-    return query;
-}
-
-export const isProcessAlive = (arg: number) => {
-    const result = spawnSync(`/bin/ps`, [`aux | grep -i ${arg}`, `| awk '{print $2}'`], {
-        shell: true
-    });
-    let test = false;
-
-    if (result.stdout.length > 0) {
-        test = result.stdout.toString().split("\n").some(r => new RegExp("^" + arg + "$", "ig").test(r));
-    }
-    console.log("Process: ", result.stdout.toString());
-    console.log("Result of check: ", test);
-    return test;
-}
-
-export const filterOptions = options => {
-    Object.keys(options).forEach(key => !options[key] && delete options[key]);
-    return options;
-};
 
 export class DeviceManager {
     [verbose: string]: any;
@@ -309,12 +269,12 @@ export class DeviceManager {
 
         queryByPlatform.status = Status.BOOTED;
         let bootedDevices = await this._unitOfWork.devices.find(queryByPlatform);
-        logInfo(`Booted device count by: `, queryByPlatform);
+        console.log(`Booted device count by: `, queryByPlatform);
         console.log(bootedDevices.length);
 
         queryByPlatform.status = Status.BUSY;
         let busyDevices = await this._unitOfWork.devices.find(queryByPlatform);
-        logInfo(`Busy device count by: `, queryByPlatform);
+        console.log(`Busy device count by: `, queryByPlatform);
         console.log(busyDevices.length);
 
         const devicesOverLimit = bootedDevices.filter(d => this.checkDeviceUsageHasReachedLimit(d));

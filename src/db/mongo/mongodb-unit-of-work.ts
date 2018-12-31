@@ -5,7 +5,7 @@ import { IDeviceModel } from "../interfaces/device-model";
 import { MongoRepository } from "./mongo-repository";
 import { IDevice } from "mobile-devices-controller";
 import * as schema from "./schemas/schema";
-require('mongoose').Promise = require("q").Promise;
+// require('mongoose').Promise = require("q").Promise;
 
 const MONGODB_CONNECTION: string = "mongodb://127.0.0.1:27017/devices";
 
@@ -18,12 +18,16 @@ export class MongoUnitOfWork implements IUnitOfWork {
 
     public static async createConnection(connectionString: string = MONGODB_CONNECTION) {
         const mongoUnitOfWork: MongoUnitOfWork = new MongoUnitOfWork();
-        mongoUnitOfWork._context = await createConnection(connectionString, {
-            server: {
-                reconnectTries: Number.MAX_VALUE,
-                autoReconnect: true
-            }
-        });
+        
+        const options = {
+            autoReconnect: true,
+            connectTimeoutMS: 5000,
+            reconnectTries: Number.MAX_VALUE,
+            useNewUrlParser: true,
+            promiseLibrary: global.Promise
+        };
+
+        mongoUnitOfWork._context = await createConnection(connectionString,options);
 
         return mongoUnitOfWork;
     }

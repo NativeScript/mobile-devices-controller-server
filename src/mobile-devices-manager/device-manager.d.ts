@@ -1,8 +1,6 @@
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { IDevice } from "mobile-devices-controller";
 import { Subscription } from 'rxjs';
-export declare const isProcessAlive: (arg: number) => boolean;
-export declare const filterOptions: (options: any) => any;
 export declare class DeviceManager {
     private _unitOfWork;
     private _maxLiveDevicesCount;
@@ -15,15 +13,15 @@ export declare class DeviceManager {
         iosCount: number;
         androidCount: number;
     });
-    attachToDevice(query: any): Promise<IDevice[]>;
-    boot(query: any, count?: number): Promise<IDevice[]>;
+    attachToDevice(query: any): Promise<any[]>;
+    boot(query: any, count?: number): Promise<any[]>;
     private clearBusyDevicesWithoutLivingParent;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
-    killDevices(query?: any): Promise<IDevice[]>;
+    killDevices(query?: any): Promise<any[]>;
     refreshData(query: any, updateQuery: any): Promise<{}>;
     dropDB(): Promise<{}>;
-    update(token: any, updateQuery: any): Promise<IDevice>;
+    update(token: any, updateQuery: any): Promise<any>;
     private onDeviceKilledSignal;
     private onDeviceErrorSignal;
     private onDeviceAttachedSignal;

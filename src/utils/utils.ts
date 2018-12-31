@@ -1,3 +1,46 @@
+import { spawnSync } from "child_process";
+
+export const isProcessAlive = (arg: number) => {
+    const result = spawnSync(`/bin/ps`, [`aux | grep -i ${arg}`, `| awk '{print $2}'`], {
+        shell: true
+    });
+    let test = false;
+
+    if (result.stdout.length > 0) {
+        test = result.stdout.toString().split("\n").some(r => new RegExp("^" + arg + "$", "ig").test(r));
+    }
+    console.log("Process: ", result.stdout.toString());
+    console.log("Result of check: ", test);
+    return test;
+}
+
+export const filterOptions = options => {
+    Object.keys(options).forEach(key => !options[key] && delete options[key]);
+    return options;
+};
+
+// const deviceToQuery = device => {
+//     let query: IDevice = {};
+//     Object.assign(query, device);
+//     Object.getOwnPropertyNames(query).forEach(prop => {
+//         if (query[prop]) {
+//             const p = prop.startsWith("_") ? prop.substring(1) : prop;
+//             query[p] = { $regex: new RegExp(query[p]) };
+//         }
+
+//         if (!query[prop] || prop.startsWith("_")) {
+//             delete query[prop];
+//         }
+//     });
+
+//     delete query["busySince"];
+//     delete query["startedAt"];
+//     delete query["config"];
+//     delete query["pid"];
+
+//     return query;
+// }
+
 export const log = (msg: string, obj?: any) => {
     const time = new Date(Date.now());
     msg = `Log at: ${time}. ${msg}! `;
