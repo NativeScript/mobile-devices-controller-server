@@ -19,18 +19,11 @@
                 "--recursive",
                 "src/**/**spec.js",
                 "--timeout", 
-                "9999999"
+                "9999999",
+                "--grep",
+                "subscribe for iPhone"
             ],
             "internalConsoleOptions": "openOnSessionStart"
-        },
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Server",
-            "program": "${workspaceFolder}/bin/www",
-            "outFiles": [
-                "${workspaceFolder}/**/*.js"
-            ]
         }
     ]
 }

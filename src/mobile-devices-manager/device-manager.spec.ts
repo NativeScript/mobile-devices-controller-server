@@ -5,7 +5,11 @@ import { TestUnitOfWork } from "../db/local/test-unit-of-work";
 import {
     Platform,
     DeviceType,
-    DeviceController, Status, IDevice, IOSController
+    DeviceController, 
+    Status, 
+    IDevice, 
+    IOSController, 
+    AndroidController
 } from "mobile-devices-controller";
 
 // const deviceToQuery = device => {
@@ -128,7 +132,7 @@ describe("devices", async () => {
         const query = { name: deviceName, apiLevel: apiLevel };
 
         it("should run Emulator-Api28-Google", async () => {
-            const startedDevice = (await deviceManager.boot({ name: deviceName, apiLevel: apiLevel, platform: Platform.ANDROID }, 1, true))[0];
+            const startedDevice = (await deviceManager.boot({ name: deviceName, apiLevel: apiLevel, platform: Platform.ANDROID }, 1))[0];
             const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             assert.isTrue(devices.some(d => d.name === deviceName), `Failed to start device ${startedDevice.name}`);
 
@@ -152,7 +156,7 @@ describe("devices", async () => {
         });
 
         it("should be able to start again Emulator-Api28-Google and kill", async () => {
-            const device = (await deviceManager.boot(query, 1, true))[0];
+            const device = (await deviceManager.boot(query, 1))[0];
             assert.isTrue(device !== null && device !== undefined && device.status === Status.BOOTED);
             await deviceManager.killDevice(device);
             const killedDevice = await unitOfWork.devices.findSingle(query);
@@ -174,7 +178,7 @@ describe("devices", async () => {
         })
 
         it("should run iPhone XR", async () => {
-            const startedDevice = (await deviceManager.boot(query, 1, true))[0];
+            const startedDevice = (await deviceManager.boot(query, 1))[0];
             const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
             assert.isTrue(devices.some(d => new RegExp(deviceName).test(d.name)), `Failed to start device ${startedDevice.name}`);
 
@@ -198,7 +202,7 @@ describe("devices", async () => {
         });
 
         it("should be able to start again iPhone XR and kill", async () => {
-            const device = (await deviceManager.boot(query, 1, true))[0];
+            const device = (await deviceManager.boot(query, 1))[0];
             assert.isTrue(device !== null && device !== undefined && device.status === Status.BOOTED);
             await deviceManager.killDevice(device);
             const killedDevice = await unitOfWork.devices.findSingle(query);
@@ -212,15 +216,45 @@ describe("devices", async () => {
 
         });
 
-        describe("subscribe for Emulator-Api28-Google", async () => {
+        describe("subscribe for emulators", async () => {
             const deviceName = new RegExp("^Emulator-Api28-Google$");
             const apiLevel = "28";
             const platform = Platform.ANDROID;
             const query = <any>{ name: deviceName, apiLevel: apiLevel };
 
+            before("subscribe emulators", () => {
+                deviceManager = new DeviceManager(unitOfWork, { iosCount: 5, androidCount: 5 });
+            })
+
             after("after subscribe android", async () => {
                 await deviceManager.killDevices({ platform: platform, status: Status.BOOTED });
                 deviceManager = null;
+            });
+
+            it("subscribe/ unsubscribe for emulator Emulator-Api19-Default with status SHUTDOWN", async () => {
+                const api19 = <any>{ name: "Emulator-Api19-Default", apiLevel: "4.4", platform: Platform.ANDROID };
+                await deviceManager.boot(api19, 1);
+                let subscribedDevice = await deviceManager.subscribeForDevice(api19);
+                assert.isTrue(subscribedDevice !== undefined && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+                const result = await deviceManager.unsubscribeFromDevice(subscribedDevice);
+                const unsubscribedDevice = await unitOfWork.devices.findByToken(subscribedDevice.token);
+
+                console.log(unsubscribedDevice)
+                assert.isTrue(unsubscribedDevice.status === Status.BOOTED, `Device name: ${deviceName} should be booted!`);
+
+                subscribedDevice = await deviceManager.subscribeForDevice(api19);
+                assert.isTrue(subscribedDevice && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+                await deviceManager.unsubscribeFromDevice(subscribedDevice);
+
+                api19.apiLevel = subscribedDevice.releaseVersion;
+                api19.releaseVersion = subscribedDevice.releaseVersion;
+                subscribedDevice = await deviceManager.subscribeForDevice(api19);
+                assert.isTrue(subscribedDevice && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+                await deviceManager.unsubscribeFromDevice(subscribedDevice);
+
+                assert.isTrue(unsubscribedDevice.status === Status.BOOTED, `Device name: ${deviceName} should be booted!`);
+
+                AndroidController.killAll();
             });
 
             it("subscribe/ unsubscribe for emulator Emulator-Api28-Google with status SHUTDOWN", async () => {
@@ -230,13 +264,13 @@ describe("devices", async () => {
                 const unsubscribedDevice = await unitOfWork.devices.findByToken(subscribedDevice.token);
 
                 console.log(unsubscribedDevice)
-                assert.isTrue(unsubscribedDevice.status === Status.SHUTDOWN, `Device name: ${deviceName} should be killed since max live time is 1!`);
+                assert.isTrue(unsubscribedDevice.status === Status.BOOTED, `Device name: ${deviceName} should be killed since max live time is 1!`);
             });
 
             it("subscribe/ subscribe for emulator Emulator-Api28-Google with status SHUTDOWN", async () => {
                 const subscribedDevice = (await deviceManager.subscribeForDevice(query));
-                assert.isTrue(subscribedDevice !== undefined && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
-                const subscribedDeviceSecondTime = await deviceManager.subscribeForDevice(query);
+                assert.isTrue(subscribedDevice && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+                const subscribedDeviceSecondTime: IDevice = await deviceManager.subscribeForDevice(query);
                 assert.isTrue(!subscribedDeviceSecondTime, `Should not be able to subscribe when there is no free device!`);
                 await deviceManager.killDevice(subscribedDevice);
             });

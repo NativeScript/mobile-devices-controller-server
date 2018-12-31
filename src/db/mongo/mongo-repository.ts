@@ -100,15 +100,20 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private static convertQueryToConditionalOne(query) {
         if (query.apiLevel || query.releaseVersion) {
             const newQuery: any = copyDeviceToStrictQuery(query);
-            const apiLevelS = isRegExp(query.apiLevel) ? new RegExp(query.apiLevel) : query.apiLevel;
-            const releaseVersionS = isRegExp(query.releaseVersion) ? new RegExp(query.releaseVersion) : query.releaseVersion;
+            const apiLevelS = new RegExp(query.apiLevel, "ig")
+            const releaseVersionS = new RegExp(query.releaseVersion, "ig");
 
+            const queryArray = [apiLevelS, releaseVersionS]
+                .filter(q => q && q.source !== "(?:)" && !q.source.includes("undefined"));
             delete newQuery.apiLevel;
             delete newQuery.releaseVersion;
             const q = <any>{};
-            q["$and"] = [
-                { "$or": [{ apiLevel: { $in: [apiLevelS, releaseVersionS] } }] },
-                // { "$or": [{ releaseVersion: { $in: [apiLevelS, releaseVersionS] } }] },
+            q["$and"] = [{
+                    "$or": [
+                        { apiLevel: { $in: [...queryArray] } },
+                        { releaseVersion: { $in: [...queryArray] } }
+                    ]
+                },
                 newQuery];
 
             return q;

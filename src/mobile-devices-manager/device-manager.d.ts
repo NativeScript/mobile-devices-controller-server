@@ -16,7 +16,8 @@ export declare class DeviceManager {
         androidCount: number;
     });
     attachToDevice(query: any): Promise<IDevice[]>;
-    boot(query: any, count: any, shouldUpdate?: boolean): Promise<IDevice[]>;
+    boot(query: any, count?: number): Promise<IDevice[]>;
+    private clearBusyDevicesWithoutLivingParent;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
     killDevices(query?: any): Promise<IDevice[]>;

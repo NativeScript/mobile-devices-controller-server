@@ -1,7 +1,7 @@
 {
   "name": "mobile-devices-controller-server",
   "description": "Communicate with emulators, simulators and real devices",
-  "version": "2.0.9-3",
+  "version": "2.0.9-4",
   "author": "SvetoslavTsenov",
   "scripts": {
     "prepare": "tsc",
