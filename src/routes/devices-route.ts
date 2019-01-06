@@ -4,7 +4,7 @@ import { DeviceManager } from "../mobile-devices-manager/device-manager";
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 import { Subscribe } from "../utils/subscription";
 import { log, logErr } from "../utils/utils";
-import { Status } from "mobile-devices-controller";
+import { Status, Platform } from "mobile-devices-controller";
 
 export class DevicesRoute extends BaseRoute {
   private static _subscribe: Subscribe = new Subscribe();
@@ -19,6 +19,20 @@ export class DevicesRoute extends BaseRoute {
 
     DevicesRoute._subscribe.pushSubscription(async () => {
       await DevicesRoute.refreshData(repository, deviceManager);
+    });
+
+    const getDevicesCountFilter = async function (req, res, next) {
+      req.setTimeout(0);
+      const iosDevices = await repository.devices.find({ platform: Platform.IOS });
+      const androidDevices = await repository.devices.find({ platform: Platform.ANDROID });
+      res.json({
+        ios: iosDevices.length,
+        android: androidDevices.length,
+      });
+    };
+
+    router.get("/devices/count", getDevicesCountFilter, (req: Request, res: Response, next: NextFunction) => {
+      res.send('');
     });
 
     const getDevicesFilter = function (req, res, next) {
