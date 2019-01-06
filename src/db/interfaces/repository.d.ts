@@ -3,7 +3,6 @@ export interface IRepository<T> {
     findSingle(query: T): Promise<T>;
     findByToken(token: string): Promise<T>;
     update(token: string, query: T): Promise<T>;
-    updateByName(name: string, query: T): Promise<T>;
     updateById(obj: any, query: T): Promise<T>;
     add(query: T): any;
     addMany(query: T[]): any;

@@ -1,5 +1,5 @@
 import { Schema } from "mongoose";
-import { IDevice } from "mobile-devices-controller";
+// import { IDevice } from "mobile-devices-controller";
 
 export type Optional<T> = { [P in keyof T]?: T[P] }
 
@@ -19,22 +19,12 @@ const deviceModel = {
   parentProcessPid: Number,
 }
 
-export var device: Schema = new Schema(deviceModel);
+export var DeviceSchema: Schema = new Schema(deviceModel);
 
-device.pre("save", function (next) {
+DeviceSchema.pre("save", function (next) {
   next();
 });
 
-export var user: Schema = new Schema({
-    createdAt: Date,
-    email: String,
-    name: String,
-    lastName: String
-  });
-  
-  user.pre("save", function(next) {
-    if (!this.createdAt) {
-      this.createdAt = new Date();
-    }
-    next();
-  });
+DeviceSchema.methods.fullName = function (): string {
+  return (this.name.trim() + " " + this.token.trim());
+};

@@ -9,7 +9,8 @@ import {
     Status,
     IDevice,
     IOSController,
-    AndroidController
+    AndroidController,
+    DeviceSignal
 } from "mobile-devices-controller";
 import { isProcessAlive } from "../utils/utils";
 
@@ -21,9 +22,12 @@ describe("process handling", () => {
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 3, maxEmulatorsCount: 1 });
+        await deviceManager.refreshData({});
+    });
+
+    after("kill connection", async () => {
+        await unitOfWork.quit();
     });
 
     it("current process should return is alive", () => {
@@ -39,7 +43,7 @@ describe("process handling", () => {
     });
 });
 
-describe("devices queries", () => {
+describe("devices queries/ filtering", () => {
 
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
@@ -47,9 +51,13 @@ describe("devices queries", () => {
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 3, maxEmulatorsCount: 1 });
+        await deviceManager.refreshData({});
+    });
+
+    after("kill connection", async () => {
+        await unitOfWork.quit();
+        await deviceManager.cleanListeners();
     });
 
     it("should return all devices", async () => {
@@ -111,37 +119,38 @@ describe("devices queries", () => {
     });
 });
 
-describe("run, kill android devices ", async function () {
-    this.retries(2);
-    this.timeout(999999);
-
+describe("start-kill-android-devices", async function () {
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
 
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 3, maxEmulatorsCount: 1 });
+        await deviceManager.refreshData({});
+    });
+
+    after("clean listeners", async () => {
+        await AndroidController.killAll();
+        deviceManager.cleanListeners();
+        await unitOfWork.quit();
     });
 
     const deviceName = "Emulator-Api28-Google";
     const apiLevel = "28";
     const platform = Platform.ANDROID;
-
     const query = { name: deviceName, apiLevel: apiLevel };
 
-    it("should run Emulator-Api28-Google", async () => {
+    it("start Emulator-Api28-Google", async () => {
         const startedDevice = (await deviceManager.boot({ name: deviceName, apiLevel: apiLevel, platform: Platform.ANDROID }, 1))[0];
-        const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
+        const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }));
         assert.isTrue(devices.some(d => d.name === deviceName), `Failed to start device ${startedDevice.name}`);
 
         const test = (await unitOfWork.devices.findSingle({ name: deviceName, apiLevel: apiLevel }));
         assert.isTrue(test.status === Status.BOOTED, "Device is not marked as booted!");
     });
 
-    it("should be able to kill Emulator-Api28-Google and assert that device is marked as killed", async () => {
+    it("kill Emulator-Api28-Google and assert that device is marked as killed", async () => {
         const device = (await unitOfWork.devices.find(query))[0];
         assert.isTrue(device !== null && device !== undefined);
         DeviceController.kill(device);
@@ -156,7 +165,7 @@ describe("run, kill android devices ", async function () {
         assert.isTrue(isKilled, `Failed to start device ${device.name}`);
     });
 
-    it("should be able to start again Emulator-Api28-Google and kill", async () => {
+    it("start again Emulator-Api28-Google and kill", async () => {
         const device = (await deviceManager.boot(query, 1))[0];
         assert.isTrue(device !== null && device !== undefined && device.status === Status.BOOTED);
         await deviceManager.killDevice(device);
@@ -165,18 +174,21 @@ describe("run, kill android devices ", async function () {
     });
 });
 
-describe("run, kill ios device ", async function () {
-    this.retries(2);
-    this.timeout(999999);
+describe("start-kill-ios-device ", async function () {
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
 
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
-        // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 3, maxEmulatorsCount: 1 });
+        await deviceManager.refreshData({});
+    });
+
+    after("clean listeners", async () => {
+        await IOSController.killAll();
+        deviceManager.cleanListeners();
+        await unitOfWork.quit();
     });
 
     const deviceName = new RegExp("iPhone XR$");
@@ -184,9 +196,10 @@ describe("run, kill ios device ", async function () {
     const platform = Platform.IOS;
     const query = <any>{ name: deviceName, apiLevel: apiLevel };
 
-    after("after", () => {
+    after("clean listeners", () => {
         DeviceController.killAll(DeviceType.SIMULATOR);
-    })
+        deviceManager.cleanListeners();
+    });
 
     it("should run iPhone XR", async () => {
         const startedDevice = (await deviceManager.boot(query, 1))[0];
@@ -221,7 +234,7 @@ describe("run, kill ios device ", async function () {
     });
 });
 
-describe("subscribe for emulators", async () => {
+describe("subscribe-emulators", async () => {
 
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
@@ -229,34 +242,32 @@ describe("subscribe for emulators", async () => {
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 5 });
-        // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 5, maxEmulatorsCount: 5, emulatorMaxUsageLimit: 3 });
+        await deviceManager.refreshData({});
     });
 
-    const deviceName = new RegExp("^Emulator-Api28-Google$");
+    after("clean listeners", async () => {
+        await AndroidController.killAll();
+        deviceManager.cleanListeners();
+        deviceManager = null;
+        await unitOfWork.quit();
+    });
+
+    const deviceName: any = new RegExp("^Emulator-Api28-Google$");
     const apiLevel = "28";
     const platform = Platform.ANDROID;
-    const query = <any>{ name: deviceName, apiLevel: apiLevel };
-
-    before("subscribe emulators", () => {
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 5, androidCount: 5 });
-    })
-
-    after("after subscribe android", async () => {
-        await deviceManager.killDevices({ platform: platform, status: Status.BOOTED });
-        deviceManager = null;
-    });
+    const query = <any>{ name: deviceName, apiLevel: apiLevel, platform: platform };
 
     it("subscribe/ unsubscribe for emulator Emulator-Api19-Default with status SHUTDOWN", async () => {
         const api19 = <any>{ name: "Emulator-Api19-Default", apiLevel: "4.4", platform: Platform.ANDROID };
         await deviceManager.boot(api19, 1);
         let subscribedDevice = await deviceManager.subscribeForDevice(api19);
+        const usedVirtualDevices = deviceManager.usedVirtualDevices.get(subscribedDevice.token);
         assert.isTrue(subscribedDevice !== undefined && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
         const result = await deviceManager.unsubscribeFromDevice(subscribedDevice);
         const unsubscribedDevice = await unitOfWork.devices.findByToken(subscribedDevice.token);
 
-        console.log(unsubscribedDevice)
+        console.log(<IDevice>unsubscribedDevice)
         assert.isTrue(unsubscribedDevice.status === Status.BOOTED, `Device name: ${deviceName} should be booted!`);
 
         subscribedDevice = await deviceManager.subscribeForDevice(api19);
@@ -291,9 +302,67 @@ describe("subscribe for emulators", async () => {
         assert.isTrue(!subscribedDeviceSecondTime, `Should not be able to subscribe when there is no free device!`);
         await deviceManager.killDevice(subscribedDevice);
     });
+
+    it("boot/ kill/ device killed event after manager kill", async function () {
+        this.timeout(25000);
+        return new Promise(async (resolve, reject) => {
+            const subscribedDevice = (await deviceManager.subscribeForDevice(query));
+            const usedDevice = deviceManager.usedVirtualDevices.get(subscribedDevice.token);
+            usedDevice.virtualDevice.on(DeviceSignal.onDeviceKilledSignal, async (d) => {
+                const deviceControllerDevice = (await DeviceController.getDevices(query))[0];
+                let unitOfWorkDevice = (await unitOfWork.devices.find(query))[0];
+                if (unitOfWorkDevice.name === deviceControllerDevice.name) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            })
+            assert.isTrue(subscribedDevice && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+            await deviceManager.killDevice(subscribedDevice);
+        });
+    });
+
+    it("boot/ kill/ killed event after killall", async function () {
+        this.timeout(25000);
+        return new Promise(async (resolve, reject) => {
+            const subscribedDevice = (await deviceManager.subscribeForDevice(query));
+            const usedDevice = deviceManager.usedVirtualDevices.get(subscribedDevice.token);
+            usedDevice.virtualDevice.on(DeviceSignal.onDeviceKilledSignal, async (d) => {
+                const unitOfWorkDevice = (await unitOfWork.devices.find(query))[0];
+                const deviceControllerDevice = (await DeviceController.getDevices(query))[0];
+                if (unitOfWorkDevice.token === deviceControllerDevice.token && unitOfWorkDevice.name === deviceControllerDevice.name) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            })
+            assert.isTrue(subscribedDevice && subscribedDevice.status === Status.BUSY, `Could not subscribe to device`);
+            await AndroidController.killAll();
+        });
+    });
+
+    it("boot/ attach event/ kill", async function () {
+        //this.timeout(25000);
+        return new Promise(async (resolve, reject) => {
+            const bootedDevice = (await DeviceController.startDevice({ name: "Emulator-Api28-Google" , platform: platform}));
+            const attachedDevices = await deviceManager.attachToDevice({ name: "Emulator-Api28-Google" , platform: platform});
+            assert.isTrue(attachedDevices.length === 1);
+            const usedDevice = deviceManager.usedVirtualDevices.get(attachedDevices[0].token);
+            usedDevice.virtualDevice.on(DeviceSignal.onDeviceKilledSignal, async (d) => {
+                const unitOfWorkDevice = (await unitOfWork.devices.find(query))[0];
+                const deviceControllerDevice = (await DeviceController.getDevices(query))[0];
+                if (unitOfWorkDevice.token === deviceControllerDevice.token && unitOfWorkDevice.name === deviceControllerDevice.name) {
+                    resolve();
+                } else {
+                    reject();
+                }
+            });
+            await AndroidController.killAll();
+        });
+    });
 });
 
-describe("subscribe for iPhone", async () => {
+describe("subscribe-simulators", async () => {
 
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
@@ -301,26 +370,21 @@ describe("subscribe for iPhone", async () => {
     before("before", async () => {
         unitOfWork = await TestUnitOfWork.createConnection();
         await unitOfWork.devices.dropDb();
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 3, androidCount: 1 });
+        deviceManager = new DeviceManager(unitOfWork, { maxSimulatorsCount: 3, maxEmulatorsCount: 1 });
         // deviceManager.intervalSubscriber.unsubscribe();
-        await deviceManager.refreshData({}, {});
+        await deviceManager.refreshData({});
     });
 
+    after("clean listeners", async () => {
+        await DeviceController.killAll(DeviceType.SIMULATOR);
+        deviceManager.cleanListeners();
+        await unitOfWork.quit();
+    });
 
     const deviceName = new RegExp("^iPhone XR$");
     const apiLevel = new RegExp("12.*");
     const platform = Platform.IOS;
     let query = <any>{ name: deviceName, apiLevel: apiLevel };
-
-    before("before ios: ", () => {
-        deviceManager = new DeviceManager(unitOfWork, { iosCount: 5, androidCount: 1 });
-    });
-
-    after("kill all simulators in tear down!", () => {
-        deviceManager.cleanListeners();
-        deviceManager = null;
-        DeviceController.killAll(DeviceType.SIMULATOR);
-    })
 
     it("create simulator", async () => {
         const simulator = (await unitOfWork.devices.find({ name: "iPhone XR", apiLevel: "12.1" }))[0];
@@ -330,7 +394,7 @@ describe("subscribe for iPhone", async () => {
         IOSController.deleteDevice(testDevice.token);
         const isDeleted = await DeviceController.getDevices({ token: testDevice.token });
         assert.isTrue(!isDeleted || isDeleted.length === 0, "Device is not deleted!");
-        await deviceManager.refreshData({}, {});
+        await deviceManager.refreshData({});
     });
 
     it("subscribe for ^iPhone XR$ ios 12.*", async () => {
@@ -363,7 +427,7 @@ describe("subscribe for iPhone", async () => {
         await deviceManager.killDevices({ platform: platform, status: Status.BUSY });
     });
 
-    it("subscribe for 2 simulator iPhone XR", async () => {
+    it("subscribe for 2 simulator iPhone XR with no existing process", async () => {
         let tempQuery1 = <any>{};
         Object.assign(tempQuery1, query);
         const dummyProcess = spawnSync("ls", { shell: true });
@@ -372,21 +436,6 @@ describe("subscribe for iPhone", async () => {
         const subscribedDevice2 = (await deviceManager.subscribeForDevice(query));
         const devices = await unitOfWork.devices.find({ status: Status.BUSY, platform: platform });
         console.log("Device length: ", devices.length);
-        assert.isTrue(devices.length === 1, "Device length should be 1, since the first one has a parentProcessPid which is not alive!");
-        IOSController.killAll();
-    });
-
-    it("subscribe for simulators iPhone XR", async () => {
-        let tempQuery1 = <any>{};
-        Object.assign(tempQuery1, query);
-        const dummyProcess = spawnSync("ls", { shell: true });
-        tempQuery1.parentProcessPid = dummyProcess.pid;
-        const subscribedDevice1 = (await deviceManager.subscribeForDevice(tempQuery1));
-        const subscribedDevice2 = (await deviceManager.subscribeForDevice(query));
-        const devices = await unitOfWork.devices.find(
-            { status: Status.BUSY, platform: platform, name: "iPhone XR" });
-        console.log("Device length: ", devices.length);
-        console.log("Devices: ", devices);
         assert.isTrue(devices.length === 1, "Device length should be 1, since the first one has a parentProcessPid which is not alive!");
     });
 });

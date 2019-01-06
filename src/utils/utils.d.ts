@@ -1,3 +1,4 @@
+export declare const copyDeviceToStrictQuery: (source: any) => {};
 export declare const isProcessAlive: (arg: number) => boolean;
 export declare const filterOptions: (options: any) => any;
 export declare const log: (msg: string, obj?: any) => void;

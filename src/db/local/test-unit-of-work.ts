@@ -1,10 +1,11 @@
+import { IDevice } from "mobile-devices-controller";
 import { IUnitOfWork } from "../interfaces/unit-of-work";
 import { IRepository } from "../interfaces/repository";
-import { IDevice } from "mobile-devices-controller";
 import { TestRepository } from "./test-repository";
 import { Connection, createConnection } from "mongoose";
 import * as schema from "../mongo/schemas/schema";
-require('mongoose').Promise = require("q").Promise;
+import { IDeviceModel } from "../interfaces/device-model";
+// require('mongoose').Promise = require("q").Promise;
 
 const MONGODB_TEST_CONNECTION: string = "mongodb://127.0.0.1:27017/devices-test";
 export class TestUnitOfWork implements IUnitOfWork {
@@ -31,8 +32,12 @@ export class TestUnitOfWork implements IUnitOfWork {
 
     get devices(): IRepository<IDevice> {
         if (!this._devices) {
-            this._devices = new TestRepository<IDevice>(this._context.model<IDevice>("Device", schema.device));
+            this._devices = new TestRepository<IDeviceModel>(this._context.model<IDeviceModel>("Device", schema.DeviceSchema));
         }
         return this._devices;
+    }
+
+    public async quit(){
+        await this._context.close()
     }
 }

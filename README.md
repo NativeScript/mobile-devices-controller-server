@@ -69,6 +69,7 @@ Install the node packages via:
 `brew link --overwrite ideviceinstaller && true`
 `brew install ios-webkit-debug-proxy`
 `brew uninstall carthage && true; brew install carthage `
+`plutil <plistfile>`
 
 ### Start server as a service
 

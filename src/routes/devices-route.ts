@@ -141,7 +141,7 @@ export class DevicesRoute extends BaseRoute {
     });
 
     const refreshFilter = function (req, res, next) {
-      deviceManager.refreshData(req.query, {}).then((devices) => {
+      deviceManager.refreshData(req.query).then((devices) => {
         res.json(devices);
       })
     };
@@ -165,10 +165,7 @@ export class DevicesRoute extends BaseRoute {
     });
   }
 
-  constructor() {
-    super();
-  }
-
+  constructor() { super(); }
 
   public get(req: Request, res: Response, next: NextFunction) {
     //set custom title
@@ -195,7 +192,7 @@ export class DevicesRoute extends BaseRoute {
       //deviceManager.checkDeviceStatus(deviceMaxUsageTime);
     }
 
-    const result = await deviceManager.refreshData({}, {});
+    const result = await deviceManager.refreshData({});
     log("Data refreshed!!!", result);
   }
 }

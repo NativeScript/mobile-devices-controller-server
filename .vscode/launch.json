@@ -7,6 +7,12 @@
         {
             "type": "node",
             "request": "launch",
+            "name": "Launch server",
+            "program": "${workspaceFolder}/bin/www"
+        },
+        {
+            "type": "node",
+            "request": "launch",
             "name": "Mocha Tests",
             "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
             "args": [
@@ -20,8 +26,9 @@
                 "src/**/**spec.js",
                 "--timeout", 
                 "9999999",
-                // "--grep",
-                // "subscribe for simulators iPhone XR"
+                "--grep",
+                "subscribe-emulators"
+
             ],
             "internalConsoleOptions": "openOnSessionStart"
         }

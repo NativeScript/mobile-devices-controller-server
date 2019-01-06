@@ -2,7 +2,6 @@ import { IUnitOfWork } from "../db/interfaces/unit-of-work";
 
 import {
     AndroidController,
-    IOSController,
     DeviceController,
     IDevice,
     Platform,
@@ -10,12 +9,17 @@ import {
     Status,
     VirtualDeviceController,
     DeviceSignal,
-    Device
 } from "mobile-devices-controller";
-import { logWarn, logInfo, logError, isProcessAlive } from "../utils/utils";
+import { logWarn, logInfo, logError, isProcessAlive, filterOptions } from "../utils/utils";
 import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
 
+export class DevicesConfig {
+    maxSimulatorsCount?= +process.env['MAX_SIMULATORS_COUNT'] | +process.env['MAX_EMU_COUNT'] | 5;
+    maxEmulatorsCount?= +process.env['MAX_EMULATORS_COUNT'] | +process.env['MAX_SIM_COUNT'] | 1;
+    simulatorMaxUsageLimit?= +process.env['SIMULATOR_MAX_USAGE_LIMIT'] | +process.env['SIM_USAGE_LIMIT'] | 10;
+    emulatorMaxUsageLimit?= +process.env['EMULATOR_MAX_USAGE_LIMIT'] | +process.env['SIM_USAGE_LIMIT'] | 1;
+}
 export class DeviceManager {
     [verbose: string]: any;
 
@@ -25,11 +29,16 @@ export class DeviceManager {
 
     public intervalSubscriber: Subscription;
 
-    constructor(private _unitOfWork: IUnitOfWork, private _maxLiveDevicesCount: { iosCount: number, androidCount: number } = { iosCount: 1, androidCount: 1 }) {
+    constructor(private _unitOfWork: IUnitOfWork, public devicesConfig: DevicesConfig = new DevicesConfig()) {
         this._usedDevices = new Map<string, number>();
         this._usedVirtualDevices = new Map<string, VirtualDeviceController>();
         this._dontCheckForDevice = false;
         //this.checkForNewDevices();
+        console.log("Device manager configs: ", this.devicesConfig);
+    }
+
+    get usedVirtualDevices() {
+        return this._usedVirtualDevices;
     }
 
     public async attachToDevice(query) {
@@ -42,7 +51,11 @@ export class DeviceManager {
             let virtualDeviceController;
             if (this._usedVirtualDevices.has(device.token)) {
                 virtualDeviceController = this._usedVirtualDevices.get(device.token);
-                device = await virtualDeviceController.attachToDevice(device);
+                if (virtualDeviceController.virtualDevice.listenerCount === 0) {
+                    device = await virtualDeviceController.attachToDevice(device);
+                } else {
+                    device = virtualDeviceController.virtualDevice;
+                }
             } else {
                 virtualDeviceController = new VirtualDeviceController(device.platform);
 
@@ -51,10 +64,10 @@ export class DeviceManager {
                 virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));
 
                 device = await virtualDeviceController.attachToDevice(device);
+
                 this.addVirtualDevice(virtualDeviceController);
             }
 
-            virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceAttachedSignal, async (d: IDevice) => await this.onDeviceAttachedSignal(d));
 
             attachedDevices.push(device);
         }
@@ -78,6 +91,11 @@ export class DeviceManager {
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (d: IDevice) => await this.onDeviceErrorSignal(d));
 
             const bootedDevice = await virtualDeviceController.startDevice(device, options);
+            if (this._usedVirtualDevices.has(device.token)) {
+                const v = this._usedVirtualDevices.get(device.token);
+                v.virtualDevice.detach();
+                this._usedVirtualDevices.delete(device.token);
+            }
             this.addVirtualDevice(virtualDeviceController);
             await this._unitOfWork.devices.updateById(device, bootedDevice);
             startedDevices.push(bootedDevice);
@@ -88,24 +106,9 @@ export class DeviceManager {
         return startedDevices;
     }
 
-    private async clearBusyDevicesWithoutLivingParent(searchQuery) {
-        searchQuery.status = Status.BUSY;
-        let busyDevices = await this._unitOfWork.devices.find(searchQuery);
-        for (let index = 0; index < busyDevices.length; index++) {
-            const element: IDevice = busyDevices[index];
-            if (element.parentProcessPid && !isProcessAlive(element.parentProcessPid)) {
-                logInfo(`Parent process ${element.parentProcessPid} is no longer live!`);
-                logInfo(`Killing ${element.name}/ ${element.token}!`);
-                await this.killDevice(element);
-            }
-        }
-    }
-
     public async subscribeForDevice(query): Promise<IDevice> {
         this._dontCheckForDevice = true;
-
-        const shouldRestartDevice =
-            !!query.restart;
+        const shouldRestartDevice = !!query.restart;
         delete query.restart;
 
         let searchQuery: IDevice = DeviceManager.convertIDeviceToQuery(query);
@@ -173,71 +176,46 @@ export class DeviceManager {
 
     public async unsubscribeFromDevice(query): Promise<IDevice> {
         const device = await this._unitOfWork.devices.findByToken(query.token);
-        let result;
         if (device) {
             device.busySince = -1;
             device.info = undefined;
-            if (device.status !== Status.SHUTDOWN) {
-                device.status = Status.BOOTED;
-            }
+            device.status = device.status !== Status.SHUTDOWN ? Status.BOOTED : device.status;
 
-            result = await this.unMark(device);
+            await this.unMark(device);
+            await this.resetDevicesCountToMaxLimitedCount(device);
         }
 
-        await this.resetDevicesCountToMaxLimitedCount(device);
+        return device;
+    }
+
+    public async killDevices(query?) {
+        const devices = await this._unitOfWork.devices.find(query);
+        for (let index = 0; index < devices.length; index++) {
+            const element = devices[index];
+            await this.killDevice(element);
+        }
+
+        await this.refreshData(query);
+    }
+
+    public async refreshData(query) {
+        const parsedDevices = await DeviceController.getDevices(query);
+
+        await this._unitOfWork.devices.deleteMany(query);
+        await this._unitOfWork.devices.addMany(parsedDevices);
+        const result = await this._unitOfWork.devices.find(query);
+        const bootedDevices = result.filter(d => d.status === Status.BOOTED);
+        for (let index = 0; index < bootedDevices.length; index++) {
+            const element = bootedDevices[index];
+            await this.attachToDevice(element);
+        }
 
         return result;
     }
 
-    public async killDevices(query?) {
-        const updateQuery = DeviceManager.convertIDeviceToQuery(query || {});
-        updateQuery.status = Status.SHUTDOWN;
-        updateQuery.startedAt = -1;
-        updateQuery.busySince = -1;
-
-        if (!query) {
-            await this._unitOfWork.devices.dropDb();
-            IOSController.killAll();
-            await this.refreshData({ platform: Platform.IOS }, updateQuery);
-            AndroidController.killAll();
-            await this.refreshData({ platform: Platform.ANDROID }, updateQuery);
-            return this._unitOfWork.devices.find(updateQuery);
-        } else {
-            const devices = await this._unitOfWork.devices.find(query);
-            for (let index = 0; index < devices.length; index++) {
-                const element = devices[index];
-                await this.killDevice(element);
-            }
-        }
-
-        await this.refreshData(query, updateQuery);
-    }
-
-    public async refreshData(query, updateQuery) {
-        return new Promise(async (resolve, reject) => {
-            const parsedDevices = await DeviceController.getDevices(query);
-
-            const devices = new Array();
-            parsedDevices.forEach(device => {
-                devices.push(DeviceManager.deviceToJSON(device));
-            });
-
-            await this._unitOfWork.devices.deleteMany(query);
-            await this._unitOfWork.devices.addMany(devices);
-            const result = await this._unitOfWork.devices.find(updateQuery);
-            const bootedDevices = result.filter(d => d.status === Status.BOOTED);
-            for (let index = 0; index < bootedDevices.length; index++) {
-                const element = bootedDevices[index];
-                await this.attachToDevice(element);
-            }
-
-            resolve(result);
-        });
-    }
-
     public async dropDB() {
         await this._unitOfWork.devices.dropDb();
-        return await this.refreshData({}, {});
+        return await this.refreshData({});
     }
 
     public async update(token, updateQuery) {
@@ -256,10 +234,21 @@ export class DeviceManager {
         console.log("Attached device: ", device);
     }
 
+    private async clearBusyDevicesWithoutLivingParent(searchQuery) {
+        searchQuery.status = Status.BUSY;
+        let busyDevices = await this._unitOfWork.devices.find(searchQuery);
+        for (let index = 0; index < busyDevices.length; index++) {
+            const element: IDevice = busyDevices[index];
+            if (element.parentProcessPid && !isProcessAlive(element.parentProcessPid)) {
+                logInfo(`Parent process ${element.parentProcessPid} is no longer live!`);
+                logInfo(`Killing ${element.name}/ ${element.token}!`);
+                await this.killDevice(element);
+            }
+        }
+    }
+
     private getMaxDeviceCount(query) {
-        const maxAndroidDeviceCount = process.env['MAX_EMU_COUNT'] || this._maxLiveDevicesCount.androidCount;
-        const maxIOSDeviceCount = process.env['MAX_SIM_COUNT'] || this._maxLiveDevicesCount.iosCount;
-        const maxDevicesCount = (query.type === DeviceType.EMULATOR || query.platform === Platform.ANDROID) ? maxAndroidDeviceCount : maxIOSDeviceCount;
+        const maxDevicesCount = (query.type === DeviceType.EMULATOR || query.platform === Platform.ANDROID) ? this.devicesConfig.maxEmulatorsCount : this.devicesConfig.maxSimulatorsCount;
         console.log(`Max device count allowed ${maxDevicesCount}`)
         return maxDevicesCount
     }
@@ -283,7 +272,6 @@ export class DeviceManager {
             const element = bootedDevices[index];
             logWarn(`${element.name}\ ${element.token} usage has reached the limit!`);
             await this.killDevice(element);
-            this.resetUsage(element);
             devicesToKill.push(element);
         }
 
@@ -341,13 +329,14 @@ export class DeviceManager {
         logWarn("Killing device", device);
         const virtualDevice = this._usedVirtualDevices.get(device.token);
         if (virtualDevice) {
+            await virtualDevice.stopDevice();
             virtualDevice.virtualDevice.removeAllListeners();
             this._usedVirtualDevices.delete(device.token);
-            await virtualDevice.stopDevice();
         } else {
             await DeviceController.kill(device);
         }
 
+        this.resetUsage(device);
         await this.markAsShutdown(device);
     }
 
@@ -363,7 +352,7 @@ export class DeviceManager {
         updateQuery['status'] = Status.SHUTDOWN;
         updateQuery['startedAt'] = -1;
         updateQuery['busySince'] = -1;
-        const log = await this._unitOfWork.devices.update(device.token, updateQuery);
+        const log = await this._unitOfWork.devices.updateById(device, updateQuery);
         console.log(`On device killed: `, log);
     }
 
@@ -377,7 +366,7 @@ export class DeviceManager {
         return searchQuery;
     }
 
-    private async unMark(query) {
+    private async unMark(query): Promise<IDevice> {
         if (!query || !query['token']) return;
         const searchQuery: IDevice = query;
         searchQuery.token = query.token;
@@ -393,24 +382,6 @@ export class DeviceManager {
 
         const device = await this._unitOfWork.devices.findByToken(query.token);
         return device;
-    }
-
-    private static deviceToJSON(device: IDevice) {
-        return {
-            name: device.name,
-            token: device.token,
-            status: device.status,
-            startedAt: device.startedAt,
-            busySince: device.busySince,
-            type: device.type,
-            platform: device.platform,
-            info: device.info,
-            config: device.config,
-            apiLevel: device.apiLevel,
-            releaseVersion: device.releaseVersion,
-            process: device.process,
-            pid: device.pid
-        };
     }
 
     private static convertIDeviceToQuery(from: any) {
@@ -438,7 +409,7 @@ export class DeviceManager {
     }
 
     private checkDeviceUsageHasReachedLimit(device: IDevice): boolean {
-        const limitCount = (device.type === DeviceType.EMULATOR || device.platform === Platform.ANDROID) ? DeviceManager.getEmuUsageLimit() : DeviceManager.getSimUsageLimit();
+        const limitCount = (device.type === DeviceType.EMULATOR || device.platform === Platform.ANDROID) ? this.devicesConfig.emulatorMaxUsageLimit : this.devicesConfig.simulatorMaxUsageLimit;
         if (this._usedDevices.has(device.token) === false || this._usedDevices.get(device.token) === 0) {
             return false;
         }
@@ -447,16 +418,12 @@ export class DeviceManager {
         return this._usedDevices.get(device.token) >= limitCount ? true : false;
     }
 
-    private static getEmuUsageLimit() {
-        return process.env["EMU_USAGE_LIMIT"] || 1;
-    }
-
-    private static getSimUsageLimit() {
-        return process.env["SIM_USAGE_LIMIT"] || 10;
-    }
-
     private removeVirtualDevice(token) {
         if (this._usedVirtualDevices.has(token)) {
+            const d = this._usedVirtualDevices.get(token);
+            if (d) {
+                d.virtualDevice.detach();
+            }
             this._usedVirtualDevices.delete(token);
         }
     }
@@ -469,7 +436,7 @@ export class DeviceManager {
         const interval$ = interval(5000);
         this.intervalSubscriber = interval$.pipe(
             skipWhile(() => this._dontCheckForDevice),
-            exhaustMap(() => DeviceController.getRunningDevices(false)))
+            exhaustMap(() => DeviceController.getRunningDevices()))
             .subscribe(async (runningDevices: IDevice[]) => {
                 for (let index = 0; index < runningDevices.length; index++) {
                     const runningDevice = runningDevices[index];
@@ -488,7 +455,8 @@ export class DeviceManager {
                                 alreadyExists.token = `${token}`;
                                 await this._unitOfWork.devices.update(oldToken, alreadyExists)
                             }
-                            await this._unitOfWork.devices.updateByName(runningDevice.name, runningDevice).then(r => console.log("updated: ", r));
+                            const androidDevice = await this._unitOfWork.devices.findSingle({ name: runningDevice.name });
+                            await this._unitOfWork.devices.updateById(androidDevice, runningDevice);
                         } else {
                             try {
                                 await this._unitOfWork.devices.update(runningDevice.token, <any>runningDevice).then(r => console.log("updated: ", r));
@@ -497,15 +465,17 @@ export class DeviceManager {
                             }
                         }
 
-                        const newDeviceQuery: any = {};
-                        if (runningDevice.name) newDeviceQuery["name"] = runningDevice.name;
-                        if (runningDevice.token) newDeviceQuery["token"] = runningDevice.token;
-                        if (runningDevice.apiLevel) newDeviceQuery["apiLevel"] = runningDevice.apiLevel;
-                        if (runningDevice.releaseVersion) newDeviceQuery["releaseVersion"] = runningDevice.releaseVersion;
-                        if (runningDevice.platform) newDeviceQuery["platform"] = runningDevice.platform;
-                        if (runningDevice.type) newDeviceQuery["type"] = runningDevice.type;
+                        const newDeviceQuery: any = {
+                            "name": runningDevice.name,
+                            "token": runningDevice.token,
+                            "apiLevel": runningDevice.apiLevel,
+                            "releaseVersion": runningDevice.releaseVersion,
+                            "platform": runningDevice.platform,
+                            "type": runningDevice.type,
+                        };
 
-                        await this.attachToDevice(newDeviceQuery);
+                        filterOptions(newDeviceQuery);
+                        await this.attachToDevice(runningDevice);
                     }
                 }
             })

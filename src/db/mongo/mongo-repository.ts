@@ -1,22 +1,8 @@
 import { Model } from "mongoose"; //import mongoose
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
-import { ObjectId } from "mongodb"
-import { isRegExp, isObject, isFunction } from "util";
+import { copyDeviceToStrictQuery } from "../../utils/utils";
 
-const copyDeviceToStrictQuery = source => {
-    let query = {};
-    for (const key in source) {
-        if (isRegExp(source[key]) || (!isObject(source[key]) && !isFunction(source[key]))) {
-            const p = key.startsWith("_") ? key.substring(1) : key;
-            if (source[p] && !p.startsWith("$")) {
-                query[p] = source[p];
-            }
-        }
-    }
-
-    return query;
-}
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
 
@@ -33,7 +19,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     public async addMany(items: T[]) {
-        return await this._entitySet.create(...items);
+        return await this._entitySet.insertMany(items);
     }
 
     public async deleteMany(item: any) {
@@ -71,20 +57,14 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     public async update(token: string, values: T) {
-        const device: IDeviceModel = await this._entitySet.findOne({ "token": token });
-        const result = await this._entitySet.updateOne({ "token": token }, this.copyDeviceToIDeviceModel(values, device));
+        const device = await this._entitySet.findOne({ "token": token });
+        const result = await this._entitySet.updateOne({ "token": token }, this.copyDeviceToIDeviceModel(values, device))
         return result;
     }
 
     public async updateById(obj, values: T) {
-        const device: IDeviceModel = await this._entitySet.findOne({ "_id": ObjectId(obj.id) });
-        const result = await this._entitySet.updateOne({ "_id": ObjectId(obj.id) }, this.copyDeviceToIDeviceModel(values, device));
-        return result;
-    }
-
-    public async updateByName(name: string, values: T) {
-        const device: IDeviceModel = await this._entitySet.findOne({ "name": name });
-        const result = await this._entitySet.updateOne({ "name": name }, this.copyDeviceToIDeviceModel(values, device));
+        const device = await this._entitySet.findById(obj.id);
+        const result = await this._entitySet.updateOne({ "_id": obj.id }, this.copyDeviceToIDeviceModel(values, device));
         return result;
     }
 
@@ -109,11 +89,11 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
             delete newQuery.releaseVersion;
             const q = <any>{};
             q["$and"] = [{
-                    "$or": [
-                        { apiLevel: { $in: [...queryArray] } },
-                        { releaseVersion: { $in: [...queryArray] } }
-                    ]
-                },
+                "$or": [
+                    { apiLevel: { $in: [...queryArray] } },
+                    { releaseVersion: { $in: [...queryArray] } }
+                ]
+            },
                 newQuery];
 
             return q;
@@ -123,6 +103,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     private copyDeviceToIDeviceModel(device: T, deviceModel: IDeviceModel) {
+        return device;
         if (!device) return deviceModel;
         if (!deviceModel) return {};
 
