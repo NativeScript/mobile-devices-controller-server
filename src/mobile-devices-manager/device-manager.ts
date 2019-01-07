@@ -126,7 +126,7 @@ export class DeviceManager {
             device = undefined;
         }
 
-        this.clearBusyDevicesWithoutLivingParent(searchQuery);
+        await this.clearBusyDevicesWithoutLivingParent(searchQuery);
 
         if (!device) {
             searchQuery.status = Status.SHUTDOWN;
