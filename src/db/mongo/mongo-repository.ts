@@ -2,6 +2,7 @@ import { Model } from "mongoose"; //import mongoose
 import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { copyDeviceToStrictQuery } from "../../utils/utils";
+import { isRegExp } from "util";
 
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
@@ -78,24 +79,33 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     private static convertQueryToConditionalOne(query) {
-        if (query.apiLevel || query.releaseVersion) {
+        if (query && query.platform === "ios") {
+            return query;
+        }
+        if (query && (query.apiLevel || query.releaseVersion)) {
             const newQuery: any = copyDeviceToStrictQuery(query);
-            const apiLevelS = new RegExp(query.apiLevel, "ig")
-            const releaseVersionS = new RegExp(query.releaseVersion, "ig");
+            const apiLevelS = isRegExp(query.apiLevel) ? query.apiLevel : new RegExp(query.apiLevel, "ig")
+            const releaseVersionS = isRegExp(query.releaseVersion) ? query.releaseVersion : new RegExp(query.releaseVersion, "ig");
 
             const queryArray = [apiLevelS, releaseVersionS]
                 .filter(q => q && q.source !== "(?:)" && !q.source.includes("undefined"));
+
             delete newQuery.apiLevel;
             delete newQuery.releaseVersion;
-            const q = <any>{};
-            q["$and"] = [{
-                "$or": [
-                    { apiLevel: { $in: [...queryArray] } },
-                    { releaseVersion: { $in: [...queryArray] } }
-                ]
-            },
-                newQuery];
+            delete newQuery.id;
 
+            const q = {
+                $and: [
+                    {
+                        $or:
+                            [
+                                { apiLevel: { $in: [...queryArray] } },
+                                { releaseVersion: { $in: [...queryArray] } }
+                            ]
+                    },
+                    newQuery
+                ]
+            }
             return q;
         }
 
