@@ -80,8 +80,7 @@ describe("devices queries/ filtering", () => {
 
     it("should return ios devices", async () => {
         const devices = await unitOfWork.devices.find({ platform: Platform.IOS });
-        const test = devices.every(d => d.platform === Platform.IOS
-            && (d.type === DeviceType.SIMULATOR || d.type === DeviceType.DEVICE));
+        const test = devices.every(d => d.platform === Platform.IOS);
         if (!test) {
             devices.forEach(d => {
                 if (d.type !== DeviceType.SIMULATOR || d.platform !== Platform.IOS) {
@@ -174,7 +173,7 @@ describe("start-kill-android-devices", async function () {
     });
 });
 
-describe("start-kill-ios-device ", async function () {
+describe("start-kill-ios-device", async function () {
     let unitOfWork: TestUnitOfWork;
     let deviceManager: DeviceManager;
 

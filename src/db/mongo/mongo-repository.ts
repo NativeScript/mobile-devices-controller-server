@@ -3,6 +3,7 @@ import { IRepository } from "../interfaces/repository";
 import { IDeviceModel } from "../interfaces/device-model";
 import { copyDeviceToStrictQuery } from "../../utils/utils";
 import { isRegExp } from "util";
+import { convertStringToRegExp } from "mobile-devices-controller";
 
 export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     private _entitySet: Model<T>
@@ -84,11 +85,14 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
         }
         if (query && (query.apiLevel || query.releaseVersion)) {
             const newQuery: any = copyDeviceToStrictQuery(query);
-            const apiLevelS = isRegExp(query.apiLevel) ? query.apiLevel : new RegExp(query.apiLevel, "ig")
-            const releaseVersionS = isRegExp(query.releaseVersion) ? query.releaseVersion : new RegExp(query.releaseVersion, "ig");
+            let apiLevelS = convertStringToRegExp(query.apiLevel);
+            let releaseVersionS = convertStringToRegExp(query.releaseVersion);
 
+            apiLevelS = isRegExp(apiLevelS) ? apiLevelS : new RegExp(apiLevelS, "ig");
+            releaseVersionS = isRegExp(releaseVersionS) ? releaseVersionS : new RegExp(releaseVersionS, "ig");
+            
             const queryArray = [apiLevelS, releaseVersionS]
-                .filter(q => q && q.source !== "(?:)" && !q.source.includes("undefined"));
+                .filter(q => q && q.source && q.source !== "(?:)" && !q.source.includes("undefined"));
 
             delete newQuery.apiLevel;
             delete newQuery.releaseVersion;
