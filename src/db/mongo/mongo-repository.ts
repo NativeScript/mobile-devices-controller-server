@@ -80,23 +80,32 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     private static convertQueryToConditionalOne(query) {
-        if (query && query.platform === "ios") {
-            return query;
-        }
-        if (query && (query.apiLevel || query.releaseVersion)) {
-            const newQuery: any = copyDeviceToStrictQuery(query);
-            let apiLevelS = convertStringToRegExp(query.apiLevel);
-            let releaseVersionS = convertStringToRegExp(query.releaseVersion);
+        const convertToMongoRegexProp = (copyQuery)=>{
+            Object.getOwnPropertyNames(copyQuery).forEach(p => {
+                const value = convertStringToRegExp(copyQuery[p]);
+                if (isRegExp(value)) {
+                    copyQuery[p] = { $regex: value };
+                }
+            });
+        };
+
+        const copyQuery: any = copyDeviceToStrictQuery(query);
+        if (copyQuery && (copyQuery.apiLevel || copyQuery.releaseVersion)) {
+            let newQuery = <any>{};
+            Object.assign(newQuery, copyQuery);
+            let apiLevelS = convertStringToRegExp(copyQuery.apiLevel);
+            let releaseVersionS = convertStringToRegExp(copyQuery.releaseVersion);
 
             apiLevelS = isRegExp(apiLevelS) ? apiLevelS : new RegExp(apiLevelS, "ig");
             releaseVersionS = isRegExp(releaseVersionS) ? releaseVersionS : new RegExp(releaseVersionS, "ig");
-            
+
             const queryArray = [apiLevelS, releaseVersionS]
                 .filter(q => q && q.source && q.source !== "(?:)" && !q.source.includes("undefined"));
 
             delete newQuery.apiLevel;
             delete newQuery.releaseVersion;
             delete newQuery.id;
+            convertToMongoRegexProp(newQuery);
 
             const q = {
                 $and: [
@@ -113,7 +122,9 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
             return q;
         }
 
-        return query;
+        convertToMongoRegexProp(copyQuery);
+
+        return copyQuery;
     }
 
     private copyDeviceToIDeviceModel(device: T, deviceModel: IDeviceModel) {

@@ -203,9 +203,11 @@ describe("start-kill-ios-device", async function () {
     it("should run iPhone XR", async () => {
         const startedDevice = (await deviceManager.boot(query, 1))[0];
         const devices = (await DeviceController.getDevices({ platform: platform, status: Status.BOOTED }))
-        assert.isTrue(devices.some(d => new RegExp(deviceName).test(d.name)), `Failed to start device ${startedDevice.name}`);
+        assert.isTrue(devices.some(d => deviceName.test(d.name)), `Failed to start device ${startedDevice.name}`);
 
-        const t = await unitOfWork.devices.findSingle(query);
+        const searchForBootedDevice = Object.assign(query);
+        searchForBootedDevice.status =  Status.BOOTED
+        const t = await unitOfWork.devices.findSingle(searchForBootedDevice);
         assert.isTrue(t.status === Status.BOOTED, "Device is not marked as booted!");
     });
 
@@ -216,6 +218,8 @@ describe("start-kill-ios-device", async function () {
         let killedDevice = await unitOfWork.devices.findSingle(query);
         let isKilled = false;
         const startTime = Date.now()
+        const searchForKilledDevice = Object.assign(query);
+        searchForKilledDevice.status =  Status.SHUTDOWN
         while (!isKilled && Date.now() - startTime < 10000) {
             isKilled = killedDevice.status === Status.SHUTDOWN;
             killedDevice = await unitOfWork.devices.findSingle(query);
@@ -258,7 +262,7 @@ describe("subscribe-emulators", async () => {
     const query = <any>{ name: deviceName, apiLevel: apiLevel, platform: platform };
 
     it("subscribe/ unsubscribe for emulator Emulator-Api19-Default with status SHUTDOWN", async () => {
-        const api19 = <any>{ name: "Emulator-Api19-Default", apiLevel: "4.4", platform: Platform.ANDROID };
+        const api19 = <any>{ name: "Emulator-Api19-Default", apiLevel: "/4.4/", platform: Platform.ANDROID };
         await deviceManager.boot(api19, 1);
         let subscribedDevice = await deviceManager.subscribeForDevice(api19);
         const usedVirtualDevices = deviceManager.usedVirtualDevices.get(subscribedDevice.token);
@@ -386,7 +390,7 @@ describe("subscribe-simulators", async () => {
     let query = <any>{ name: deviceName, apiLevel: apiLevel };
 
     it("create simulator", async () => {
-        const simulator = (await unitOfWork.devices.find({ name: "iPhone XR", apiLevel: "12.1" }))[0];
+        const simulator = (await unitOfWork.devices.find({ name: "/iPhone XR/", apiLevel: "/12.1/" }))[0];
         const testDevice = IOSController.fullResetOfSimulator({ name: simulator.name, apiLevel: simulator.apiLevel, token: simulator.token });
         const isCreated = (await DeviceController.getDevices({ token: testDevice.token }))[0];
         assert.isTrue(isCreated && isCreated.status === Status.SHUTDOWN);

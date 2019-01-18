@@ -2,13 +2,11 @@ import { spawnSync } from "child_process";
 import { isRegExp, isObject, isFunction } from "util";
 
 export const copyDeviceToStrictQuery = source => {
-    const obj = Object.create(source);
-    Object.getOwnPropertyNames(obj).forEach(p => console.log("PROP:", p));
     let query = {};
     for (const key in source) {
         if (isRegExp(source[key]) || (!isObject(source[key]) && !isFunction(source[key]))) {
             const p = key.startsWith("_") ? key.substring(1) : key;
-            if (source[p] && !p.startsWith("$")) {
+            if (source[p] && !key.startsWith("$") && !p.startsWith("$")) {
                 query[p] = source[p];
             }
         }
