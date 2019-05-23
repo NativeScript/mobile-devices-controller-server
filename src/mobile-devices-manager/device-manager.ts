@@ -89,8 +89,8 @@ export class DeviceManager {
 
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceKilledSignal, async (d: IDevice) => await this.onDeviceKilledSignal(d));
             virtualDeviceController.virtualDevice.once(DeviceSignal.onDeviceErrorSignal, async (d: IDevice) => await this.onDeviceErrorSignal(d));
-
             const bootedDevice = await virtualDeviceController.startDevice(device, options);
+
             if (this._usedVirtualDevices.has(device.token)) {
                 const v = this._usedVirtualDevices.get(device.token);
                 v.virtualDevice.detach();
@@ -113,6 +113,8 @@ export class DeviceManager {
 
         let searchQuery: IDevice = DeviceManager.convertIDeviceToQuery(query);
         const info = searchQuery.info;
+        const options = searchQuery.options;
+        delete searchQuery.options;
         const parentPid = searchQuery.parentProcessPid;
         delete searchQuery.info;
         delete searchQuery.parentProcessPid;
@@ -138,7 +140,8 @@ export class DeviceManager {
                     type: device.type,
                     name: device.name,
                     apiLevel: device.apiLevel,
-                    platform: device.platform
+                    platform: device.platform,
+                    options: options
                 };
 
                 device = (await this.boot(deviceToBoot, 1))[0];
