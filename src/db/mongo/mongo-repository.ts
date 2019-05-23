@@ -80,6 +80,7 @@ export class MongoRepository<T extends IDeviceModel> implements IRepository<T> {
     }
 
     private static convertQueryToConditionalOne(query) {
+        
         const convertToMongoRegexProp = (copyQuery)=>{
             Object.getOwnPropertyNames(copyQuery).forEach(p => {
                 const value = convertStringToRegExp(copyQuery[p]);

@@ -28,7 +28,6 @@
                 "9999999",
                 "--grep",
                 "subscribe-emulators"
-
             ],
             "internalConsoleOptions": "openOnSessionStart"
         }

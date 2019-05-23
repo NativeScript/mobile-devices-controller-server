@@ -18,7 +18,6 @@ export class MongoUnitOfWork implements IUnitOfWork {
 
     public static async createConnection(connectionString: string = MONGODB_CONNECTION) {
         const mongoUnitOfWork: MongoUnitOfWork = new MongoUnitOfWork();
-        
         const options = {
             autoReconnect: true,
             connectTimeoutMS: 5000,
@@ -27,7 +26,7 @@ export class MongoUnitOfWork implements IUnitOfWork {
             promiseLibrary: global.Promise
         };
 
-        mongoUnitOfWork._context = await createConnection(connectionString,options);
+        mongoUnitOfWork._context = await createConnection(connectionString, <any>options);
 
         return mongoUnitOfWork;
     }

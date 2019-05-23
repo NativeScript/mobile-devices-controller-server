@@ -25,7 +25,7 @@ export class TestUnitOfWork implements IUnitOfWork {
             promiseLibrary: global.Promise
         };
 
-        mongoUnitOfWork._context = await createConnection(connectionString, options);
+        mongoUnitOfWork._context = await createConnection(connectionString, <any>options);
 
         return mongoUnitOfWork;
     }
