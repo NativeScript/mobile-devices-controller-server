@@ -1,9 +1,22 @@
 [Unit]
-After=network.target
+Description=Start mobile devices controller server 
+# After=network.target network-online.target networking.service mongod.service
 
 [Service]
-Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/snap/bin"
-ExecStart=/bin/sh /home/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.linux.sh &
+RestartSec=160
+PIDFile=..../mobile-devices-controller-server.pid
+User=nsbuilduser
+Restart=always
+KillSignal=SIGQUIT
+WorkingDirectory=/home/nsbuilduser/jenkins
+ExecStart=/bin/bash [PATH_TO_SCRIPT]/start-mobile-devices-controller-server.linux
+Environment="DISPLAY=:0"
+Environment="OSTYPE=linux-gnu"
+Environment=PATH=/bin:/usr/bin:/usr/bin/env:/usr/bin/node;NPM_CONFIG_PREFIX=~/.npm-global;PATH=${PATH}:~/.npm-global/bin:$PATH;
+Environment="JAVA_HOME="/usr/lib/jvm/java-8-openjdk-amd64/jre"
+Environment="ANDROID_HOME="...../Android/Sdk";
+Environment="PATH="${PATH}:${ANDROID_HOME}/tools/:${ANDROID_HOME}/platform-tools/"
 
 [Install]
-WantedBy=default.target
+WantedBy=graphical.target
+WantedBy=multi-user.target

@@ -14,7 +14,7 @@
 		<string>usr/local/opt/:/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:/usr/bin:/sbin:/bin:$PATH</string>
 		<key>ProgramArguments</key>
 		<array>
-			<string>/Users/nsbuilduser/git/mobile-devices-controller-server/resources/start-mobile-devices-controller-server.sh</string>
+			<string>......./start-mobile-devices-controller-server.sh</string>
 		</array>
 		<key>WorkingDirectory</key>
 		<string>/</string>

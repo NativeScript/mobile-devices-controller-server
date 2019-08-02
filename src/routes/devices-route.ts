@@ -112,20 +112,20 @@ export class DevicesRoute extends BaseRoute {
       res.json("Filed to subscribe!");
     });
 
-    const unsubscribeDeviceFilter = function (req, res, next) {
+    const unsubscribeDeviceFilter = function async (req, res, next) {
       req.setTimeout(0);
-      DevicesRoute._subscribe.pushSubscription(async () => {
+      //DevicesRoute._subscribe.pushSubscription(async () => {
         const query = req.query;
         if (!query && !query.token) {
           res.json("Missing required token param");
         }
-        await deviceManager.unsubscribeFromDevice(query).then((device) => {
+        deviceManager.unsubscribeFromDevice(query).then((device) => {
           log("Unsubscribed from device: ", device);
           res.json(device);
         }, () => {
           res.json("Filed to unsubscribe!");
         });
-      });
+      //});
     };
 
     // /api/v1/devices/unsubscribe?token=93B75F3B-0D2A-4873-8BCB-9F78B104BDB5
