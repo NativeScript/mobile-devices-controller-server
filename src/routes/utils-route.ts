@@ -13,7 +13,7 @@ export class UtilsRoute extends BaseRoute {
             UtilsRoute._subscribe.pushSubscription(async () => {
                 let port = req.query.from || 8300;
                 const host = req.query.host || "0.0.0.0";
-                findFreePort(req.query.retriesCount || 1000, host, port, 10000).then((port) => {
+                findFreePort(req.query.retriesCount || 1000, host, port, 9999).then((port) => {
                     res.json(port);
                 }).catch((error) => {
                     res.json(error);
@@ -63,7 +63,7 @@ export class UtilsRoute extends BaseRoute {
 }
 
 export const findFreePort = async (retries: number = 100, host: string = "0.0.0.0", port = "8000", timeout: number = 10000) => {
-    let p: number = parseInt(port);
+    let p: number = +port;
     p = checkIfPortIsUsed(p);
     try {
         while (!await server(p)) {
