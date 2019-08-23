@@ -100,7 +100,7 @@ export class DevicesRoute extends BaseRoute {
           log('Requested query: ', query);
           await deviceManager.subscribeForDevice(query).then((device) => {
             log("Subscribe for device: ", device);
-            log(`Requested delay of ${delay} seconds is requested!`);
+            log(`Requested delay is: ${delay}!`);
             setTimeout(() => {
               res.json(device);
             }, delay);
