@@ -7,13 +7,15 @@ import * as http from 'http';
 export class UtilsRoute extends BaseRoute {
     private static _subscribe: Subscribe = new Subscribe();
     public static usedPorts: Array<number> = new Array();
+    public static cashedPorts: Map<string, number> = new Map();
 
     public static create(router: Router) {
         const getFreePort = function (req, res, next) {
             UtilsRoute._subscribe.pushSubscription(async () => {
                 let port = req.query.from || 8300;
+                const key = req.query.key;
                 const host = req.query.host || "0.0.0.0";
-                findFreePort(req.query.retriesCount || 1000, host, port, 9999).then((port) => {
+                findFreePort(key, req.query.retriesCount || 1000, host, port, 9999).then((port) => {
                     res.json(port);
                 }).catch((error) => {
                     res.json(error);
@@ -62,8 +64,11 @@ export class UtilsRoute extends BaseRoute {
     }
 }
 
-export const findFreePort = async (retries: number = 100, host: string = "0.0.0.0", port = "8000", timeout: number = 10000) => {
+export const findFreePort = async (key: string, retries: number = 100, host: string = "0.0.0.0", port = "8000", timeout: number = 10000) => {
     let p: number = +port;
+    if (key && UtilsRoute.cashedPorts.has(key)) {
+        return UtilsRoute.cashedPorts.get(key);
+    }
     p = checkIfPortIsUsed(p);
     try {
         while (!await server(p)) {
@@ -76,6 +81,9 @@ export const findFreePort = async (retries: number = 100, host: string = "0.0.0.
     }
 
     UtilsRoute.usedPorts.push(p);
+    if (key) {
+        UtilsRoute.cashedPorts.set(key, p);
+    }
     return p;
 }
 
