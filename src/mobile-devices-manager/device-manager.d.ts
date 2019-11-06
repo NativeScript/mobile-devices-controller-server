@@ -1,5 +1,5 @@
 import { IUnitOfWork } from "../db/interfaces/unit-of-work";
-import { IDevice, VirtualDeviceController } from "mobile-devices-controller";
+import { IDevice } from "mobile-devices-controller";
 import { Subscription } from 'rxjs';
 export declare class DevicesConfig {
     maxSimulatorsCount?: number;
@@ -16,15 +16,15 @@ export declare class DeviceManager {
     private _dontCheckForDevice;
     intervalSubscriber: Subscription;
     constructor(_unitOfWork: IUnitOfWork, devicesConfig?: DevicesConfig);
-    readonly usedVirtualDevices: Map<string, VirtualDeviceController>;
-    attachToDevice(query: any): Promise<IDevice[]>;
-    boot(query: any, count?: number): Promise<IDevice[]>;
+    readonly usedVirtualDevices: Map<string, any>;
+    attachToDevice(query: any): Promise<any[]>;
+    boot(query: any, count?: number): Promise<any[]>;
     subscribeForDevice(query: any): Promise<IDevice>;
     unsubscribeFromDevice(query: any): Promise<IDevice>;
     killDevices(query?: any): Promise<void>;
-    refreshData(query: any): Promise<IDevice[]>;
-    dropDB(): Promise<IDevice[]>;
-    update(token: any, updateQuery: any): Promise<IDevice>;
+    refreshData(query: any): Promise<any[]>;
+    dropDB(): Promise<any[]>;
+    update(token: any, updateQuery: any): Promise<any>;
     private onDeviceKilledSignal;
     private onDeviceErrorSignal;
     private onDeviceAttachedSignal;

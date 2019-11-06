@@ -10,6 +10,8 @@ export declare class MongoRepository<T extends IDeviceModel> implements IReposit
     deleteMany(item: any): Promise<{
         ok?: number;
         n?: number;
+    } & {
+        deletedCount?: number;
     }>;
     find(query: T): Promise<Array<T>>;
     findByToken(token: string): Promise<T>;
@@ -19,6 +21,8 @@ export declare class MongoRepository<T extends IDeviceModel> implements IReposit
     remove(item: T): Promise<{
         ok?: number;
         n?: number;
+    } & {
+        deletedCount?: number;
     }>;
     dropDb(): Promise<void>;
     private static convertQueryToConditionalOne;
