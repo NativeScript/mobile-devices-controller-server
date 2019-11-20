@@ -15,9 +15,9 @@ import { interval, Subscription } from 'rxjs';
 import { skipWhile, exhaustMap } from 'rxjs/operators';
 
 export class DevicesConfig {
-    maxSimulatorsCount?= +process.env['MAX_SIMULATORS_COUNT'] | +process.env['MAX_EMU_COUNT'] | 5;
+    maxSimulatorsCount?= +process.env['MAX_SIMULATORS_COUNT'] | +process.env['MAX_EMU_COUNT'] | 2;
     maxEmulatorsCount?= +process.env['MAX_EMULATORS_COUNT'] | +process.env['MAX_SIM_COUNT'] | 1;
-    simulatorMaxUsageLimit?= +process.env['SIMULATOR_MAX_USAGE_LIMIT'] | +process.env['SIM_USAGE_LIMIT'] | 10;
+    simulatorMaxUsageLimit?= +process.env['SIMULATOR_MAX_USAGE_LIMIT'] | +process.env['SIM_USAGE_LIMIT'] | 5;
     emulatorMaxUsageLimit?= +process.env['EMULATOR_MAX_USAGE_LIMIT'] | +process.env['SIM_USAGE_LIMIT'] | 1;
 }
 export class DeviceManager {
